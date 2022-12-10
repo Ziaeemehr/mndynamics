@@ -3,12 +3,12 @@
 
 ### installation
 
-#### from pip
+<!-- #### from pip
 ```sh
 pip3 install mndynamics
-```
+``` -->
 
 #### from source code
 ```sh
-pip3 install mndynamics
+pip3 install -e mndynamics
 ```

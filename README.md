@@ -10,5 +10,5 @@ pip3 install mndynamics
 
 #### from source code
 ```sh
-pip3 install -e mndynamics
+pip3 install -e .
 ```

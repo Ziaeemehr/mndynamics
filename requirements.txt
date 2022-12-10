@@ -1,0 +1,7 @@
+numpy
+scipy
+networkx
+# python-igraph
+# cloud_sptheme
+matplotlib
+# bctpy

@@ -6,10 +6,10 @@ from scipy.integrate import odeint
 
 class HH(object):
 
-    def __init__(self, par=None):
+    def __init__(self, par={}):
 
-        if not par is None:
-            self.check_parameters(par)
+        
+        self.check_parameters(par)
         self.set_parameters(par)
 
     def __call__(self) -> None:
@@ -19,11 +19,10 @@ class HH(object):
     def __str__(self) -> str:
         return "Hudgkin Huxley Model"
 
-    def set_parameters(self, par=None):
+    def set_parameters(self, par={}):
 
         self._par = self.get_default_parameters()
-        if not par is None:
-            self._par.update(par)
+        self._par.update(par)
 
         for key in self._par.keys():
             setattr(self, key, self._par[key])

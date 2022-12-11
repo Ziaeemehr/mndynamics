@@ -6,10 +6,10 @@ from scipy.integrate import odeint
 
 class RTM(object):
 
-    def __init__(self, par) -> None:
+    def __init__(self, par: dict={}) -> None:
         
-        if not par is None:
-            self.check_parameters(par)
+
+        self.check_parameters(par)
         self.set_parameters(par)
     
     def __call__(self) -> None:
@@ -19,11 +19,10 @@ class RTM(object):
     def __str__(self) -> str:
         return "Reduced Traub-Miles Model of a Pyramidal Neuron in Rat Hippocampus"
     
-    def set_parameters(self, par=None):
+    def set_parameters(self, par:dict ={}):
 
         self._par = self.get_default_parameters()
-        if not par is None:
-            self._par.update(par)
+        self._par.update(par)
 
         for key in self._par.keys():
             setattr(self, key, self._par[key])
@@ -53,38 +52,38 @@ class RTM(object):
             'dt': 0.01
         }
         return params
+    
+    def set_initial_state(self):
+
+        x0 = [self.v0,
+              self.m_inf(self.v0),
+              self.h_inf(self.v0),
+              self.n_inf(self.v0)]
+        return x0
 
     def alpha_h(self, v):
         return 0.128 * exp(-(v + 50.0) / 18.0)
 
-
     def alpha_m(self, v):
         return 0.32 * (v + 54) / (1.0 - exp(-(v + 54.0) / 4.0))
-
 
     def alpha_n(self, v):
         return 0.032 * (v + 52) / (1.0 - exp(-(v + 52.0) / 5.0))
 
-
     def beta_h(self, v):
         return 4.0 / (1.0 + exp(-(v + 27.0) / 5.0))
-
 
     def beta_m(self, v):
         return 0.28 * (v + 27.0) / (exp((v + 27.0) / 5.0) - 1.0)
 
-
     def beta_n(self,v):
         return 0.5 * exp(-(v + 57.0) / 40.0)
-
 
     def h_inf(self, v):
         return self.alpha_h(v) / (self.alpha_h(v) + self.beta_h(v))
 
-
     def m_inf(self,v):
         return self.alpha_m(v) / (self.alpha_m(v) + self.beta_m(v))
-
 
     def n_inf(self, v):
         return self.alpha_n(v) / (self.alpha_n(v) + self.beta_n(v))

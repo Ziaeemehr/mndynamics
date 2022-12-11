@@ -46,16 +46,16 @@ class PLOT(object):
 
 
 class RTM_GATING_VARIABLES(_RTM, PLOT):    
-    def __init__(self, par=None):
+    def __init__(self, par={}):
         super().__init__(par)
     
 
 class WB_GATING_VARIABLES(_WB, PLOT):
-    def __init__(self, par=None):
+    def __init__(self, par={}):
         super().__init__(par)
     
 class Erisir_GATING_VARIABLES(_Erisir, PLOT):
-    def __init__(self, par=None):
+    def __init__(self, par={}):
         super().__init__(par)
 
     

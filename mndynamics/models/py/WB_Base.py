@@ -6,10 +6,9 @@ from scipy.integrate import odeint
 
 class WB(object):
 
-    def __init__(self, par) -> None:
+    def __init__(self, par={}) -> None:
 
-        if not par is None:
-            self.check_parameters(par)
+        self.check_parameters(par)
         self.set_parameters(par)
 
     def __call__(self) -> None:
@@ -19,11 +18,10 @@ class WB(object):
     def __str__(self) -> str:
         return "Wang-Buzsaki Model of an Inhibitory Interneuron in Rat Hippocampus"
 
-    def set_parameters(self, par=None):
+    def set_parameters(self, par={}):
 
         self._par = self.get_default_parameters()
-        if not par is None:
-            self._par.update(par)
+        self._par.update(par)
 
         for key in self._par.keys():
             setattr(self, key, self._par[key])
@@ -53,6 +51,14 @@ class WB(object):
             'dt': 0.01
         }
         return params
+
+    def set_initial_state(self):
+
+        x0 = [self.v0,
+              self.h_inf(self.v0),
+              self.n_inf(self.v0),
+              ]
+        return x0
 
     def alpha_h(self, v):
         return 0.35 * exp(-(v + 58.0) / 20.0)
@@ -96,7 +102,7 @@ class WB(object):
         return [dv, dh, dn]
 
     def simulate(self, tspan=None):
-        
+
         x0 = self.set_initial_state()
         tspan = self.tspan if tspan is None else tspan
         sol = odeint(self.f_sys, x0, tspan)
@@ -106,4 +112,3 @@ class WB(object):
                 "h":    sol[:, 1],
                 "n":    sol[:, 2]
                 }
-

@@ -1,0 +1,19 @@
+
+*egg-info/
+.ipynb_checkpoints/
+
+*.txt
+*.npz
+*.npy
+*.csv
+*.json
+*.h5
+*.hdf5
+*.pkl
+*.p
+*.pyc
+*.pyo
+
+# Byte-compiled / optimized / DLL files
+__pycache__/
+

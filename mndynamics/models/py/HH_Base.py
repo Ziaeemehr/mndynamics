@@ -85,10 +85,10 @@ class HH(object):
 
     def alpha_m(self, v):
         
-        if np.abs(v+45.0) > 1.0e-8:
-            return  (v + 45.0) / 10.0 / (1.0 - exp(-(v + 45.0) / 10.0))
-        else:
-            return 1.0
+        # if np.abs(v+45.0) > 1.0e-8:
+        return  (v + 45.0) / 10.0 / (1.0 - exp(-(v + 45.0) / 10.0))
+        # else:
+        #     return 1.0
 
     def alpha_h(self, v):
         return 0.07*exp(-(v+70)/20)
@@ -141,3 +141,68 @@ class HH(object):
                 "h":    sol[:, 2],
                 "n":    sol[:, 3]
                 }
+
+
+class HH_Reduced(HH):
+    def __init__(self, par={}):
+        super().__init__(par)
+    
+    def __str__(self) -> str:
+        return "Reduced Hudgkin Huxley Model"
+
+    def __call__(self) -> None:
+        print("Reduced Hudgkin Huxley Model")
+        return self._par
+    
+    def set_initial_state(self):
+
+        x0 = [self.v0,
+              self.n_inf(self.v0)]
+        return x0
+
+    
+    def f_sys(self, x0, t):
+
+        v, n = x0
+    
+        m = self.m_inf(v)
+        h = 0.83 - n
+
+        I_na = -self.g_na * h * m ** 3 * (v - self.v_na)
+        I_k = -self.g_k * n ** 4 * (v - self.v_k)
+        I_l = -self.g_l * (v - self.v_l)
+        
+        dv = (self.i_ext + I_na + I_k + I_l) / self.c
+        dn = self.alpha_n(v) * (1.0 - n) - self.beta_n(v) * n
+
+        return [dv, dn]
+
+    
+    def simulate(self, tspan=None):
+        """
+        simulate the model
+
+        Parameters
+        ----------
+        tspan : array
+            time span for simulation
+        
+        Returns
+        -------
+        dict: {t, v, n}
+            time series of v, n
+
+        """
+        
+        x0 = self.set_initial_state()
+
+        tspan = self.tspan if tspan is None else tspan
+        sol = odeint(self.f_sys, x0, tspan)
+
+        return {"t": tspan,
+                "v":    sol[:, 0],
+                "m":    self.m_inf(sol[:, 0]),
+                "h":    0.83 - sol[:, 1],
+                "n":    sol[:, 1]
+                }
+

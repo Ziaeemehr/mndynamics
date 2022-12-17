@@ -4,7 +4,7 @@ import matplotlib.pyplot as plt
 from scipy.integrate import odeint
 
 
-class LIF(object):
+class QIF(object):
 
     def __init__(self, par={}):
 
@@ -12,11 +12,11 @@ class LIF(object):
         self.set_parameters(par)
 
     def __call__(self) -> None:
-        print("Linear Integrate-and-Fire (LIF) Model")
+        print("(Normalized) quadratic integrate-and-fire (QIF) model")
         return self._par
 
     def __str__(self) -> str:
-        return "Linear Integrate-and-Fire (LIF) Model"
+        return "(Normalized) quadratic integrate-and-fire (QIF) model"
 
     def set_parameters(self, par={}):
 
@@ -44,7 +44,7 @@ class LIF(object):
             "i_ext": 0.11,
             'v0': 0.0,
             'dt': 0.01,
-            "t_end": 100.0,
+            't_end':100.0,
         }
         return params
 
@@ -53,7 +53,7 @@ class LIF(object):
         return self.v0
 
     def f_sys(self, v):
-        return -v / self.tau_m + self.i_ext
+        return -v / self.tau_m * (1.0 - v) + self.i_ext
 
     def integrate_rk4(self, x, dt, f):
         k1 = dt * f(x)
@@ -82,3 +82,4 @@ class LIF(object):
                 v[i] = 0.0
 
         return {"t": tspan, "v": v}
+

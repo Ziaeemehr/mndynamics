@@ -6,20 +6,19 @@ from scipy.integrate import odeint
 
 class RTM(object):
 
-    def __init__(self, par: dict={}) -> None:
-        
+    def __init__(self, par: dict = {}) -> None:
 
         self.check_parameters(par)
         self.set_parameters(par)
-    
+
     def __call__(self) -> None:
         print("Reduced Traub-Miles Model of a Pyramidal Neuron in Rat Hippocampus")
         return self._par
 
     def __str__(self) -> str:
         return "Reduced Traub-Miles Model of a Pyramidal Neuron in Rat Hippocampus"
-    
-    def set_parameters(self, par:dict ={}):
+
+    def set_parameters(self, par: dict = {}):
 
         self._par = self.get_default_parameters()
         self._par.update(par)
@@ -52,7 +51,7 @@ class RTM(object):
             'dt': 0.01
         }
         return params
-    
+
     def set_initial_state(self):
 
         x0 = [self.v0,
@@ -76,13 +75,13 @@ class RTM(object):
     def beta_m(self, v):
         return 0.28 * (v + 27.0) / (exp((v + 27.0) / 5.0) - 1.0)
 
-    def beta_n(self,v):
+    def beta_n(self, v):
         return 0.5 * exp(-(v + 57.0) / 40.0)
 
     def h_inf(self, v):
         return self.alpha_h(v) / (self.alpha_h(v) + self.beta_h(v))
 
-    def m_inf(self,v):
+    def m_inf(self, v):
         return self.alpha_m(v) / (self.alpha_m(v) + self.beta_m(v))
 
     def n_inf(self, v):
@@ -101,7 +100,7 @@ class RTM(object):
         return [dv, dm, dh, dn]
 
     def simulate(self, tspan=None):
-        
+
         x0 = self.set_initial_state()
         tspan = self.tspan if tspan is None else tspan
         sol = odeint(self.f_sys, x0, tspan)
@@ -113,3 +112,77 @@ class RTM(object):
                 "n":    sol[:, 3]
                 }
 
+
+class RTMm(RTM):
+    def __init__(self, par: dict = {}) -> None:
+        super().__init__(par)
+
+    def __str__(self) -> str:
+        return "Reduced Traub-Miles Model with M-current"
+
+    def __call__(self) -> None:
+        print("Reduced Traub-Miles Model with M-current")
+        return self._par
+
+    def set_initial_state(self):
+
+        x0 = [self.v0,
+              self.m_inf(self.v0),
+              self.h_inf(self.v0),
+              self.n_inf(self.v0),
+              0.0]
+        return x0
+
+    def get_default_parameters(self):
+
+        params = {
+            'c': 1.0,
+            'g_k': 80.0,
+            'g_na': 100.0,
+            'g_l': 0.1,
+            'g_m': 0.25,
+            'v_k': -100.0,
+            'v_na': 50.0,
+            'v_l': -67.0,
+            'i_ext': 1.5,
+            't_end': 100.0,
+            'v0': -70.0,
+            'dt': 0.01,
+        }
+        return params
+
+    def w_inf(self, v):
+        return 1.0/(1.0 + exp(-(v + 35.0)/10.0))
+
+    def tau_w(self, v):
+        return 400.0/(3.3*exp((v+35)/20)+exp(-(v+35)/20))
+
+    def f_sys(self, x0, t):
+        '''
+        define RTM Model with M-current
+        '''
+        v, m, h, n, w = x0
+        dv = (self.i_ext -
+              self.g_na * m**3 * h * (v - self.v_na) -
+              self.g_k * n**4 * (v - self.v_k) -
+              self.g_m * w * (v - self.v_k) -
+              self.g_l * (v - self.v_l)) / self.c
+        dm = self.alpha_m(v) * (1.0 - m) - self.beta_m(v) * m
+        dh = self.alpha_h(v) * (1.0 - h) - self.beta_h(v) * h
+        dn = self.alpha_n(v) * (1.0 - n) - self.beta_n(v) * n
+        dw = (self.w_inf(v) - w) / self.tau_w(v)
+        return [dv, dm, dh, dn, dw]
+
+    def simulate(self, tspan=None):
+
+        x0 = self.set_initial_state()
+        tspan = self.tspan if tspan is None else tspan
+        sol = odeint(self.f_sys, x0, tspan)
+
+        return {"t": tspan,
+                "v":    sol[:, 0],
+                "m":    sol[:, 1],
+                "h":    sol[:, 2],
+                "n":    sol[:, 3],
+                "w":    sol[:, 4]
+                }

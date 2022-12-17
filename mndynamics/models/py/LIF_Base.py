@@ -5,6 +5,16 @@ from scipy.integrate import odeint
 
 
 class LIF(object):
+    """
+    Linear Integrate-and-Fire (LIF) Model
+
+    Usage:
+    >>> par = {'i_ext': 0.11, 't_end': 100.0, 'v0': -70.0, 'dt': 0.01}
+    >>> model = LIF(par)
+    >>> sol = model.simulate()
+    >>> plt.plot(sol['t'], sol['v'])
+
+    """
 
     def __init__(self, par={}):
 
@@ -82,3 +92,51 @@ class LIF(object):
                 v[i] = 0.0
 
         return {"t": tspan, "v": v}
+
+class LIF_Addapt(LIF):
+    """
+    Linear Integrate-and-Fire (LIF) Model with Adaptation
+
+    Usage:
+    >>> par = {'i_ext': 0.13, 't_end': 100.0, 'v0': -70.0, 'dt': 0.01}
+    >>> model = LIF_Addapt(par)
+    >>> sol = model.simulate()
+    >>> plt.plot(sol['t'], sol['v'])
+
+    """
+    def __init__(self, par={}):
+        super().__init__(par)
+    
+    def __call__(self) -> None:
+        print("Linear Integrate-and-Fire (LIF) Model with Adaptation")
+        return self._par
+    def __str__(self) -> str:
+        return "Linear Integrate-and-Fire (LIF) Model with Adaptation"
+    
+    def get_default_parameters(self):
+
+        params = {
+            'c': 1.0,
+            "tau_m": 10.0,
+            "tau_a": 40.0,
+            't_end': 100.0,
+            "i_ext": 0.13,
+            'v0': 0.0,
+            'dt': 0.01,
+            "t_end": 100.0,
+        }
+        return params
+
+    
+    def set_initial_state(self):
+
+        return [self.v0, 0.0]
+
+    def f_sys(self, x0):
+
+        v, w = x0
+        dv = -v / self.tau_m + self.i_ext - w*v
+        dw = -w/self.tau_a
+
+        return np.array([dv, dw])
+

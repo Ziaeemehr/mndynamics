@@ -5,6 +5,16 @@ from scipy.integrate import odeint
 
 
 class HH(object):
+    """
+    Hudgkin Huxley Model
+
+    Usage:
+    >>> par = {'i_ext': 1.5, 't_end': 100.0, 'v0': -70.0, 'dt': 0.01}
+    >>> model = HH(par)
+    >>> sol = model.simulate()
+    >>> plt.plot(sol['t'], sol['v'])
+
+    """
 
     def __init__(self, par={}):
 
@@ -105,6 +115,20 @@ class HH(object):
         return [dv, dm, dh, dn]
 
     def simulate(self, tspan=None):
+        """
+        simulate the model
+
+        Parameters
+        ----------
+        tspan : array
+            time span for simulation
+        
+        Returns
+        -------
+        dict: {t, v, m, h, n}
+            time series of v, m, h, n
+
+        """
         
         x0 = self.set_initial_state()
 

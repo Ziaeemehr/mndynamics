@@ -1,5 +1,6 @@
 import numpy as np
 from numpy import exp
+from copy import copy
 import matplotlib.pyplot as plt
 from scipy.integrate import odeint
 
@@ -93,6 +94,7 @@ class LIF(object):
 
         return {"t": tspan, "v": v}
 
+
 class LIF_Addapt(LIF):
     """
     Linear Integrate-and-Fire (LIF) Model with Adaptation
@@ -104,30 +106,31 @@ class LIF_Addapt(LIF):
     >>> plt.plot(sol['t'], sol['v'])
 
     """
+
     def __init__(self, par={}):
         super().__init__(par)
-    
+
     def __call__(self) -> None:
         print("Linear Integrate-and-Fire (LIF) Model with Adaptation")
         return self._par
+
     def __str__(self) -> str:
         return "Linear Integrate-and-Fire (LIF) Model with Adaptation"
-    
+
     def get_default_parameters(self):
 
         params = {
             'c': 1.0,
             "tau_m": 10.0,
-            "tau_a": 40.0,
-            't_end': 100.0,
+            "tau_w": 40.0,
+            "delta": 0.05,
             "i_ext": 0.13,
             'v0': 0.0,
             'dt': 0.01,
-            "t_end": 100.0,
+            "t_end": 300.0,
         }
         return params
 
-    
     def set_initial_state(self):
 
         return [self.v0, 0.0]
@@ -136,7 +139,36 @@ class LIF_Addapt(LIF):
 
         v, w = x0
         dv = -v / self.tau_m + self.i_ext - w*v
-        dw = -w/self.tau_a
+        dw = -w/self.tau_w
 
         return np.array([dv, dw])
 
+    def simulate(self, tspan=None):
+
+        x0 = self.set_initial_state()
+        tspan = self.tspan if tspan is None else tspan
+
+        num_steps = len(tspan)
+        y = np.zeros((num_steps, 2))
+
+        for i in range(1, num_steps):
+            y_new = self.integrate_rk4(y[i - 1, :], self.dt, self.f_sys)
+            v_new = y_new[0]
+            w_new = y_new[1]
+
+            if v_new <= 1:
+                y[i, :] = copy(y_new)
+            else:
+                y[i, 0] = 0.0
+                y[i, 1] = y[i-1, 1] + self.delta
+
+                # t_old = tspan[i-1]
+                # t_new = tspan[i]
+                # t_spike = (v_new - 1) * t_old + (1 - y[i-1, 0]) * t_new
+                # t_spike = t_spike / (v_new - y[i-1, 0])
+                # y[i, 0] = 0.0
+                # y[i, 1] = ((v_new - 1) * y[i-1, 1] + (1 - y[i-1, 0])
+                #            * w_new) / (v_new - y[i-1, 0])
+
+
+        return {"t": tspan, "v": y[:, 0], "w": y[:, 1]}

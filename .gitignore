@@ -1,6 +1,7 @@
 
 *egg-info/
 .ipynb_checkpoints/
+e/
 
 *.txt
 *.npz

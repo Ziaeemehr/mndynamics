@@ -18,7 +18,6 @@ class HH(object):
 
     def __init__(self, par={}):
 
-        
         self.check_parameters(par)
         self.set_parameters(par)
 

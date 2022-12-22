@@ -20,3 +20,5 @@ pip3 install -e .
 <p align="center">
  myBinder interface to run the notebooks online. 
 </p>
+
+[![Binder](https://mybinder.org/badge_logo.svg)](https://mybinder.org/v2/gh/Ziaeemehr/mndynamics/main?labpath=mndynamics%2Fexamples%2FIntro.ipynb)

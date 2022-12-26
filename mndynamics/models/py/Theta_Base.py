@@ -1,7 +1,9 @@
 import numpy as np
+from tqdm import tqdm
 from numpy import exp
 import matplotlib.pyplot as plt
 from scipy.integrate import odeint
+from mndynamics.utility import is_sequence
 
 
 class Theta(object):

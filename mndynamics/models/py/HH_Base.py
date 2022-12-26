@@ -1,4 +1,5 @@
 import numpy as np
+from tqdm import tqdm
 from numpy import exp
 import matplotlib.pyplot as plt
 from scipy.integrate import odeint
@@ -237,7 +238,7 @@ class HH_F_I_CURVE(HH):
             if direction == "backward":
                 vec_i_ext = vec_i_ext[::-1]
 
-            for ii in range(len(vec_i_ext)):
+            for ii in tqdm(range(len(vec_i_ext)), desc=direction):
                 num_spikes = 0
                 t_spikes = []
                 i_ext = self.i_ext = vec_i_ext[ii]
@@ -268,7 +269,7 @@ class HH_F_I_CURVE(HH):
                             ((maxh - minh) < 0.0001 * abs(maxh + minh)) &
                                 ((maxn - minn) < 0.0001 * abs(maxn + minn))):
                             freq[ii] = 0.0
-                            print ("I =%10.3f, f =%10.2f" % (i_ext, freq[ii]))
+                            # print ("I =%10.3f, f =%10.2f" % (i_ext, freq[ii]))
                             break
                     
                     # spike detection
@@ -280,7 +281,7 @@ class HH_F_I_CURVE(HH):
         
                     if num_spikes == 4:
                         freq[ii] = 1000.0 / (t_spikes[-1] - t_spikes[-2])
-                        print ("I =%10.3f, f =%10.2f, t =%18.6f" % (i_ext, freq[ii], tmp))
+                        # print ("I =%10.3f, f =%10.2f, t =%18.6f" % (i_ext, freq[ii], tmp))
                         break
             data[direction] = freq
         data['backward'] = data['backward'][::-1]

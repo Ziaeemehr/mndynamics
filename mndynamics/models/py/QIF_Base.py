@@ -64,9 +64,9 @@ class QIF(object):
         x = x + (k1 + 2.0 * (k2 + k3) + k4) / 6.0
         return x
 
-    def simulate(self, tspan=None):
+    def simulate(self, tspan=None, x0=None):
 
-        x0 = self.set_initial_state()
+        x0 = self.set_initial_state() if x0 is None else x0
         tspan = self.tspan if tspan is None else tspan
 
         num_steps = len(tspan)

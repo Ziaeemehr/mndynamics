@@ -111,9 +111,9 @@ class RTM(object):
         dn = self.alpha_n(v) * (1.0 - n) - self.beta_n(v) * n
         return [dv, dm, dh, dn]
 
-    def simulate(self, tspan=None):
+    def simulate(self, tspan=None, x0=None):
 
-        x0 = self.set_initial_state()
+        x0 = self.set_initial_state() if x0 is None else x0
         tspan = self.tspan if tspan is None else tspan
         sol = odeint(self.f_sys, x0, tspan)
 
@@ -197,7 +197,7 @@ class RTM_M(RTM):
         dw = (self.w_inf(v) - w) / self.tau_w(v)
         return [dv, dh, dn, dw]
 
-    def simulate(self, tspan=None):
+    def simulate(self, tspan=None, x0=None):
         """
         simulate the model
 
@@ -205,6 +205,8 @@ class RTM_M(RTM):
         ----------
         tspan : array_like
             time span
+        x0 : array_like
+            initial state
 
         Returns
         -------
@@ -213,7 +215,7 @@ class RTM_M(RTM):
             m, h, n and w
         """
 
-        x0 = self.set_initial_state()
+        x0 = self.set_initial_state() if x0 is None else x0
         tspan = self.tspan if tspan is None else tspan
         sol = odeint(self.f_sys, x0, tspan)
 
@@ -285,9 +287,9 @@ class RTM_AHP(RTM):
 
         return [dv, dh, dn, dca]
 
-    def simulate(self, tspan=None):
+    def simulate(self, tspan=None, x0=None):
 
-        x0 = self.set_initial_state()
+        x0 = self.set_initial_state() if x0 is None else x0
         tspan = self.tspan if tspan is None else tspan
         sol = odeint(self.f_sys, x0, tspan)
 
@@ -301,6 +303,15 @@ class RTM_AHP(RTM):
 
 
 class RTM_2D(RTM):
+
+    '''
+    Reduced 2-dimensional Traub-Miles Model of a Pyramidal Neuron in Rat Hippocampus
+    as defined in Eq. 12.1-2 in [1]
+
+    References
+    ----------
+    [1] Börgers, C., 2017. An introduction to modeling neuronal dynamics (Vol. 66). Berlin: Springer.
+    '''
 
     def __init__(self, par: dict = {}) -> None:
 

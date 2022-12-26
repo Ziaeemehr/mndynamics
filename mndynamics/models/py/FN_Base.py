@@ -58,7 +58,7 @@ class FN(object):
         dn = (self.a*v - self.a*n)/self.tau_n
         return np.array([dv, dn])
 
-    def simulate(self, tspan=None):
+    def simulate(self, tspan=None, x0=None):
         """
         simulate the model
 
@@ -74,8 +74,7 @@ class FN(object):
 
         """
         
-        x0 = self.set_initial_state()
-
+        x0 = self.set_initial_state() if x0 is None else x0
         tspan = self.tspan if tspan is None else tspan
         sol = odeint(self.f_sys, x0, tspan)
 

@@ -10,7 +10,13 @@ pip3 install mndynamics
 
 #### from source code
 For runnig the notebooks online, there is no need for installation and just 
-use your browser, but you can intall the package locally from source :
+use your browser, but you can intall the package from pip:
+
+```sh
+pip3 install mndynamics
+```
+or more recent updates from source code locally from source :
+
 ```sh
 pip3 install -e .
 ```

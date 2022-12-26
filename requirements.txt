@@ -1,8 +1,7 @@
+wheel
 numpy
 scipy
 tqdm
 networkx
-# python-igraph
 # cloud_sptheme
 matplotlib
-# bctpy

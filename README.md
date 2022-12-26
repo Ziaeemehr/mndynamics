@@ -15,7 +15,7 @@ use your browser, but you can intall the package from pip:
 ```sh
 pip3 install mndynamics
 ```
-or more recent updates from source code locally from source :
+or more recent updates from source code:
 
 ```sh
 pip3 install -e .

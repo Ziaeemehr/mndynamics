@@ -658,8 +658,8 @@ class RTM_F_I_CURVE(RTM):
 
         
         ax = plt.gca() if ax is None else ax
-        ax.plot(I, ff, 'r', label='forward', alpha=0.5, lw=3)
-        ax.plot(I[::-1], fb[::-1], "b", label='backward', alpha=0.5, lw=3)
+        ax.plot(I, ff, 'ro', fillstyle="none", ms=8, label='forward')
+        ax.plot(I[::-1], fb[::-1], "bo", fillstyle="none", label='backward')
 
         ax.set_xlabel(r'$I [\mu A/cm^2]$', labelpad=15)
         ax.set_ylabel('frequency [Hz]')

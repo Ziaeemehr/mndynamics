@@ -56,7 +56,7 @@ class HH(object):
             'v_k': -82.0,
             'v_na': 45.0,
             'v_l': -59.0,
-            'v_thr':-20.0,
+            'v_thr': -20.0,
             'i_ext': 7.0,
             't_end': 50.0,
             'v0': -70.0,
@@ -85,9 +85,9 @@ class HH(object):
         return 0.01 * (-60.0 - v) / (exp((-60.0 - v) / 10.0) - 1.0)
 
     def alpha_m(self, v):
-        
+
         # if np.abs(v+45.0) > 1.0e-8:
-        return  (v + 45.0) / 10.0 / (1.0 - exp(-(v + 45.0) / 10.0))
+        return (v + 45.0) / 10.0 / (1.0 - exp(-(v + 45.0) / 10.0))
         # else:
         #     return 1.0
 
@@ -123,14 +123,14 @@ class HH(object):
         ----------
         tspan : array
             time span for simulation
-        
+
         Returns
         -------
         dict: {t, v, m, h, n}
             time series of v, m, h, n
 
         """
-        
+
         x0 = self.set_initial_state() if x0 is None else x0
 
         tspan = self.tspan if tspan is None else tspan
@@ -147,38 +147,36 @@ class HH(object):
 class HH_Reduced(HH):
     def __init__(self, par={}):
         super().__init__(par)
-    
+
     def __str__(self) -> str:
         return "Reduced Hudgkin Huxley Model"
 
     def __call__(self) -> None:
         print("Reduced Hudgkin Huxley Model")
         return self._par
-    
+
     def set_initial_state(self):
 
         x0 = [self.v0,
               self.n_inf(self.v0)]
         return x0
 
-    
     def f_sys(self, x0, t):
 
         v, n = x0
-    
+
         m = self.m_inf(v)
         h = 0.83 - n
 
         I_na = -self.g_na * h * m ** 3 * (v - self.v_na)
         I_k = -self.g_k * n ** 4 * (v - self.v_k)
         I_l = -self.g_l * (v - self.v_l)
-        
+
         dv = (self.i_ext + I_na + I_k + I_l) / self.c
         dn = self.alpha_n(v) * (1.0 - n) - self.beta_n(v) * n
 
         return [dv, dn]
 
-    
     def simulate(self, tspan=None, x0=None):
         """
         simulate the model
@@ -187,14 +185,14 @@ class HH_Reduced(HH):
         ----------
         tspan : array
             time span for simulation
-        
+
         Returns
         -------
         dict: {t, v, n}
             time series of v, n
 
         """
-        
+
         x0 = self.set_initial_state() if x0 is None else x0
 
         tspan = self.tspan if tspan is None else tspan
@@ -207,20 +205,34 @@ class HH_Reduced(HH):
                 "n":    sol[:, 1]
                 }
 
+
 class HH_F_I_CURVE(HH):
     def __init__(self, par={}):
         super().__init__(par)
-    
+
     def __str__(self) -> str:
         return "F-I Curve Hudgkin Huxley Model"
 
     def __call__(self) -> None:
         print("F-I Curve Hudgkin Huxley Model")
         return self._par
-    
-    def simulate_F_I(self, vec_i_ext, tspan=None):
+
+    def simulate_F_I(self, vec_i_ext, tspan=None, directions='both'):
         '''
         simulate the model with given vector of i_ext and calculate F-I curve
+
+        Parameters
+        ----------
+        vec_i_ext : array
+            vector of i_ext
+        tspan : array
+            time span for simulation
+        directions : str
+            'forward' or 'backward' or 'both'
+
+        Returns
+        -------
+        dict: {i_ext, freq}
         '''
 
         tspan = self.tspan if tspan is None else tspan
@@ -230,11 +242,16 @@ class HH_F_I_CURVE(HH):
         v_thr = self.v_thr
         data = {"i_ext": vec_i_ext}
 
-        for direction in ['forward', 'backward']:
-            
+        if directions == 'both':
+            directions = ['forward', 'backward']
+        else:
+            directions = [directions]
+
+        for direction in directions:
+
             freq = np.zeros(len(vec_i_ext))
             x0 = None
-            
+
             if direction == "backward":
                 vec_i_ext = vec_i_ext[::-1]
 
@@ -242,7 +259,7 @@ class HH_F_I_CURVE(HH):
                 num_spikes = 0
                 t_spikes = []
                 i_ext = self.i_ext = vec_i_ext[ii]
-                
+
                 # set the last state as the initial state
 
                 if ii > 0:
@@ -271,65 +288,180 @@ class HH_F_I_CURVE(HH):
                             freq[ii] = 0.0
                             # print ("I =%10.3f, f =%10.2f" % (i_ext, freq[ii]))
                             break
-                    
+
                     # spike detection
                     if (i > 0) & (v[i-1] < v_thr) & (v[i] >= v_thr):
                         num_spikes += 1
                         tmp = ((i - 1) * dt * (v[i - 1] - v_thr) +
-                            i * dt * (v_thr - v[i])) / (v[i - 1] - v[i])
+                               i * dt * (v_thr - v[i])) / (v[i - 1] - v[i])
                         t_spikes.append(tmp)
-        
+
                     if num_spikes == 4:
                         freq[ii] = 1000.0 / (t_spikes[-1] - t_spikes[-2])
                         # print ("I =%10.3f, f =%10.2f, t =%18.6f" % (i_ext, freq[ii], tmp))
                         break
             data[direction] = freq
-        data['backward'] = data['backward'][::-1]
+        if 'backward' in directions:
+            data['backward'] = data['backward'][::-1]
         return data
-    
+
     def plot_F_I(self, data, ax=None):
         '''
         plot F-I curve
         '''
-        ff = data['forward']
-        fb = data['backward']
-        I = data['i_ext']
+        directions = list(data.keys())
+        directions.remove('i_ext')
 
-        
         ax = plt.gca() if ax is None else ax
-        ax.plot(I, ff, 'ro', fillstyle="none", ms=8, label='forward')
-        ax.plot(I[::-1], fb[::-1], 'bo', fillstyle="none", ms=8, label='backward')
 
-        index = np.max(np.where(ff < 1e-8)[0])
-        I_c = 0.5 * (I[index] + I[index + 1])
-        ax.plot([I[index+1], I[index+1]], [0, ff[index+1]], '--b', lw=1)
+        for direction in directions:
+            f = data[direction]
+            I = data['i_ext']
+            if direction == 'forward':
+                ax.plot(I, f, 'ro', fillstyle="none", ms=8, label='forward')
+            elif direction == 'backward':
+                ax.plot(I[::-1], f[::-1], "bo",
+                        fillstyle="none", label='backward')
+            else:
+                raise ValueError("direction must be 'forward' or 'backward'")
 
-        index = np.max(np.where(fb < 1e-8)[0])
-        I_star = 0.5 * (I[index] + I[index + 1])
-        ax.plot([I[index + 1], I[index + 1]], [0, fb[index + 1]], '--b', lw=1)
-        ax.text(I_star - 0.1, -15, r"$I_{\ast}$", fontsize=20, color="b")
-        ax.text(I_c - 0.1, -15, r"$I_c$", fontsize=20, color="b")
+        if 'forward' in directions:
+            ff = data['forward']
+
+            index = np.max(np.where(ff < 1e-8)[0])
+            I_c = 0.5 * (I[index] + I[index + 1])
+            ax.plot([I[index+1], I[index+1]], [0, ff[index+1]], '--b', lw=1)
+
+        if 'backward' in directions:
+            fb = data['backward']
+            index = np.max(np.where(fb < 1e-8)[0])
+            I_star = 0.5 * (I[index] + I[index + 1])
+            ax.plot([I[index + 1], I[index + 1]],
+                    [0, fb[index + 1]], '--b', lw=1)
+            ax.text(I_star - 0.1, -15, r"$I_{\ast}$", fontsize=20, color="b")
+            ax.text(I_c - 0.1, -15, r"$I_c$", fontsize=20, color="b")
 
         ax.set_xlabel(r'$I [\mu A/cm^2]$', labelpad=15)
         ax.set_ylabel('frequency [Hz]')
         ax.legend()
         return ax
 
-        
 
-            
-                
-            
-                
-        
-                        
-                
+class HH_2D_F_I_CURVE(HH_Reduced):
 
+    def __init__(self, par={}):
+        super().__init__(par)
 
+    def __str__(self) -> str:
+        return "HH reduced (2D) F-I curve"
 
+    def __call__(self) -> None:
+        print("HH reduced (2D) F-I curve")
+        return self._par
 
+    def simulate_F_I(self, vec_i_ext, tspan=None, directions='both'):
+        '''
+        simulate F-I curve for reduced HH model
 
+        Parameters
+        ----------
+        vec_i_ext : array_like
+            external current
+        tspan : array_like, optional
+            time span, by default None
+        directions : str or list, optional
+            direction of current, by default 'both'
+            options: 'forward', 'backward', 'both'
 
-                
+        Returns
+        -------
+        dict {i_ext, freq}
 
+        '''
+        tspan = self.tspan if tspan is None else tspan
+        num_steps = len(tspan)
+        dt = tspan[1] - tspan[0]
+        N = int(600 / dt)
+        v_thr = self.v_thr
+        data = {"i_ext": vec_i_ext}
+
+        if directions == 'both':
+            directions = ['forward', 'backward']
+        else:
+            directions = [directions]
+
+        for direction in directions:
+
+            freq = np.zeros(len(vec_i_ext))
+            x0 = None
+
+            if direction == "backward":
+                vec_i_ext = vec_i_ext[::-1]
+
+            for ii in tqdm(range(len(vec_i_ext)), desc=direction):
+                num_spikes = 0
+                t_spikes = []
+                i_ext = self.i_ext = vec_i_ext[ii]
+
+                # set the last state as the initial state
+
+                if ii > 0:
+                    x0 = [v[-1], n[-1]]
+
+                sol = self.simulate(tspan, x0=x0)
+                v = sol['v']
+                n = sol['n']
+                # find steady state
+                for i in range(num_steps):
+                    if ((i % N) == 0) and (i > 0):
+                        maxv = max(v[i - N:i])
+                        minv = min(v[i - N:i])
+                        maxn = max(n[i - N:i])
+                        minn = min(n[i - N:i])
+                        if (((maxv - minv) < 0.0001 * abs(maxv + minv)) &
+                                ((maxn - minn) < 0.0001 * abs(maxn + minn))):
+                            freq[ii] = 0.0
+                            # print ("I =%10.3f, f =%10.2f" % (i_ext, freq[ii]))
+                            break
+
+                    # spike detection
+                    if (i > 0) & (v[i-1] < v_thr) & (v[i] >= v_thr):
+                        num_spikes += 1
+                        tmp = ((i - 1) * dt * (v[i - 1] - v_thr) +
+                               i * dt * (v_thr - v[i])) / (v[i - 1] - v[i])
+                        t_spikes.append(tmp)
+
+                    if num_spikes == 4:
+                        freq[ii] = 1000.0 / (t_spikes[-1] - t_spikes[-2])
+                        # print ("I =%10.3f, f =%10.2f, t =%18.6f" % (i_ext, freq[ii], tmp))
+                        break
+            data[direction] = freq
+        if 'backward' in directions:
+            data['backward'] = data['backward'][::-1]
+        return data
+    
+    def plot_F_I(self, data, ax=None):
+        '''
+        plot F-I curve
+        '''
+        directions = list(data.keys())
+        directions.remove('i_ext')
+
+        ax = plt.gca() if ax is None else ax
+
+        for direction in directions:
+            f = data[direction]
+            I = data['i_ext']
+            if direction == 'forward':
+                ax.plot(I, f, 'ro', fillstyle="none", ms=8, label='forward')
+            elif direction == 'backward':
+                ax.plot(I[::-1], f[::-1], "bo",
+                        fillstyle="none", label='backward')
+            else:
+                raise ValueError("direction must be 'forward' or 'backward'")
+
+        ax.set_xlabel(r'$I [\mu A/cm^2]$', labelpad=15)
+        ax.set_ylabel('frequency [Hz]')
+        ax.legend()
+        return ax
 

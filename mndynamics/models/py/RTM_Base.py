@@ -579,7 +579,7 @@ class RTM_F_I_CURVE(RTM):
         print("F-I Curve RTM Model")
         return super().__call__()
     
-    def simulate_F_I(self, vec_i_ext, tspan=None):
+    def simulate_F_I(self, vec_i_ext, tspan=None, directions='both'):
         '''
         Simulate the F-I curve with a sequence of i_ext
         '''
@@ -592,7 +592,12 @@ class RTM_F_I_CURVE(RTM):
         v_thr = self.v_thr
         data = {"i_ext": vec_i_ext}
 
-        for direction in ['forward', 'backward']:
+        if directions == 'both':
+            directions = ['forward', 'backward']
+        else:
+            directions = [directions]
+
+        for direction in directions:
             
             freq = np.zeros(len(vec_i_ext))
             x0 = None
@@ -645,21 +650,28 @@ class RTM_F_I_CURVE(RTM):
                         # print ("I =%10.3f, f =%10.2f" % (i_ext, freq[ii]))
                         break
             data[direction] = freq
-        data['backward'] = data['backward'][::-1]
+        if 'backward' in data.keys():
+            data['backward'] = data['backward'][::-1]
         return data
 
     def plot_F_I(self, data, ax=None):
         '''
         plot F-I curve
         '''
-        ff = data['forward']
-        fb = data['backward']
-        I = data['i_ext']
+        directions = list(data.keys())
+        directions.remove('i_ext')
 
         
         ax = plt.gca() if ax is None else ax
-        ax.plot(I, ff, 'ro', fillstyle="none", ms=8, label='forward')
-        ax.plot(I[::-1], fb[::-1], "bo", fillstyle="none", label='backward')
+        for direction in directions:
+            f = data[direction]
+            I = data['i_ext']
+            if direction == 'forward':
+                ax.plot(I, f, 'ro', fillstyle="none", ms=8, label='forward')
+            elif direction == 'backward':
+                ax.plot(I[::-1], f[::-1], "bo", fillstyle="none", label='backward')
+            else:
+                raise ValueError("direction must be 'forward' or 'backward'")
 
         ax.set_xlabel(r'$I [\mu A/cm^2]$', labelpad=15)
         ax.set_ylabel('frequency [Hz]')

@@ -215,11 +215,6 @@ class WB_F_I_CURVE(WB):
         '''
         directions = list(data.keys())
         directions.remove('i_ext')
-
-        # ff = data['forward']
-        # fb = data['backward']
-        # I = data['i_ext']
-
         
         ax = plt.gca() if ax is None else ax
         for direction in directions:

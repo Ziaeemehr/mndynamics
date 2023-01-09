@@ -567,18 +567,19 @@ class RTM_2D(RTM):
                         [:, 1], 'o', label=key, markersize=4, alpha=0.7)
         ax.legend(frameon=False, loc='best')
 
+
 class RTM_F_I_CURVE(RTM):
 
     def __init__(self, par={}):
         super().__init__(par)
-    
+
     def __str__(self) -> str:
         return 'RTM_F_I_CURVE'
-    
+
     def __call__(self) -> None:
         print("F-I Curve RTM Model")
         return super().__call__()
-    
+
     def simulate_F_I(self, vec_i_ext, tspan=None, directions='both'):
         '''
         Simulate the F-I curve with a sequence of i_ext
@@ -598,10 +599,10 @@ class RTM_F_I_CURVE(RTM):
             directions = [directions]
 
         for direction in directions:
-            
+
             freq = np.zeros(len(vec_i_ext))
             x0 = None
-            
+
             if direction == "backward":
                 vec_i_ext = vec_i_ext[::-1]
 
@@ -609,7 +610,7 @@ class RTM_F_I_CURVE(RTM):
                 num_spikes = 0
                 t_spikes = []
                 i_ext = self.i_ext = vec_i_ext[ii]
-                
+
                 # set the last state as the initial state
                 if ii > 0:
                     x0 = [v[-1], m[-1], h[-1], n[-1]]
@@ -637,14 +638,14 @@ class RTM_F_I_CURVE(RTM):
                             freq[ii] = 0.0
                             # print ("I =%10.3f, f =%10.2f" % (i_ext, freq[ii]))
                             break
-                    
+
                     # spike detection
                     if (i > 0) & (v[i-1] < v_thr) & (v[i] >= v_thr):
                         num_spikes += 1
                         tmp = ((i - 1) * dt * (v[i - 1] - v_thr) +
-                            i * dt * (v_thr - v[i])) / (v[i - 1] - v[i])
+                               i * dt * (v_thr - v[i])) / (v[i - 1] - v[i])
                         t_spikes.append(tmp)
-        
+
                     if num_spikes == 4:
                         freq[ii] = 1000.0 / (t_spikes[-1] - t_spikes[-2])
                         # print ("I =%10.3f, f =%10.2f" % (i_ext, freq[ii]))
@@ -661,7 +662,6 @@ class RTM_F_I_CURVE(RTM):
         directions = list(data.keys())
         directions.remove('i_ext')
 
-        
         ax = plt.gca() if ax is None else ax
         for direction in directions:
             f = data[direction]
@@ -669,7 +669,8 @@ class RTM_F_I_CURVE(RTM):
             if direction == 'forward':
                 ax.plot(I, f, 'ro', fillstyle="none", ms=8, label='forward')
             elif direction == 'backward':
-                ax.plot(I[::-1], f[::-1], "bo", fillstyle="none", label='backward')
+                ax.plot(I[::-1], f[::-1], "bo",
+                        fillstyle="none", label='backward')
             else:
                 raise ValueError("direction must be 'forward' or 'backward'")
 
@@ -677,4 +678,127 @@ class RTM_F_I_CURVE(RTM):
         ax.set_ylabel('frequency [Hz]')
         ax.legend()
         return ax
-       
+
+
+class RTM_ins(RTM):
+    """
+    Reduced Traub-Miles Model of a Pyramidal Neuron in Rat Hippocampus
+    with nearly instantaneous rise synapse.
+    """
+
+    def __init__(self, par: dict = {}) -> None:
+        super().__init__(par)
+
+    def __call__(self) -> None:
+        print("""Reduced Traub-Miles Model of a Pyramidal Neuron 
+in Rat Hippocampus with nearly instantaneous rise synapse.""")
+        return self._par
+
+    def __str__(self) -> str:
+        return """Reduced Traub-Miles Model of a Pyramidal Neuron 
+in Rat Hippocampus with nearly instantaneous rise synapse."""
+
+    def get_default_parameters(self):
+        params = super().get_default_parameters()
+        params.update({'tau_r': 0.2,
+                       'tau_d': 2.0})
+        return params
+
+    def set_initial_state(self):
+
+        x0 = [self.v0,
+              self.m_inf(self.v0),
+              self.h_inf(self.v0),
+              self.n_inf(self.v0),
+              0.0]
+        return x0
+
+    def f_sys(self, x0, t):
+        '''
+        define RTM Model
+        '''
+        v, m, h, n, s = x0
+        dv = (self.i_ext - self.g_na * m**3 * h * (v - self.v_na) -
+              self.g_k * n**4 * (v - self.v_k) - self.g_l * (v - self.v_l)) / self.c
+        dm = self.alpha_m(v) * (1.0 - m) - self.beta_m(v) * m
+        dh = self.alpha_h(v) * (1.0 - h) - self.beta_h(v) * h
+        dn = self.alpha_n(v) * (1.0 - n) - self.beta_n(v) * n
+        ds = 0.5 * (1.0+np.tanh(0.1 * v)) * (1-s)/self.tau_r - s/self.tau_d
+        return [dv, dm, dh, dn, ds]
+
+    def simulate(self, tspan=None, x0=None):
+
+        x0 = self.set_initial_state() if x0 is None else x0
+        tspan = self.tspan if tspan is None else tspan
+        sol = odeint(self.f_sys, x0, tspan)
+
+        return {"t": tspan,
+                "v":    sol[:, 0],
+                "m":    sol[:, 1],
+                "h":    sol[:, 2],
+                "n":    sol[:, 3],
+                "s":    sol[:, 4]
+                }
+
+class RTM_gra(RTM):
+    """
+    Reduced Traub-Miles Model of a Pyramidal Neuron in Rat Hippocampus
+    with gradual rise synapse.
+    """
+
+    def __init__(self, par: dict = {}) -> None:
+        super().__init__(par)
+
+    def __call__(self) -> None:
+        print("""Reduced Traub-Miles Model of a Pyramidal Neuron 
+in Rat Hippocampus with gradual rise synapse.""")
+        return self._par
+
+    def __str__(self) -> str:
+        return """Reduced Traub-Miles Model of a Pyramidal Neuron 
+in Rat Hippocampus with gradual rise synapse."""
+
+    def get_default_parameters(self):
+        params = super().get_default_parameters()
+        params.update({'tau_r': 0.2,
+                       'tau_d': 2.0})
+        return params
+
+    def set_initial_state(self):
+
+        x0 = [self.v0,
+              self.m_inf(self.v0),
+              self.h_inf(self.v0),
+              self.n_inf(self.v0),
+              0.0, 
+              0.0]
+        return x0
+
+    def f_sys(self, x0, t):
+        '''
+        define RTM Model
+        '''
+        v, m, h, n, s, q = x0
+        dv = (self.i_ext - self.g_na * m**3 * h * (v - self.v_na) -
+              self.g_k * n**4 * (v - self.v_k) - self.g_l * (v - self.v_l)) / self.c
+        dm = self.alpha_m(v) * (1.0 - m) - self.beta_m(v) * m
+        dh = self.alpha_h(v) * (1.0 - h) - self.beta_h(v) * h
+        dn = self.alpha_n(v) * (1.0 - n) - self.beta_n(v) * n
+        dq = 0.5 * (1.0+np.tanh(0.1 * v)) * (1-q)/self.tau_r - q/self.tau_d
+        ds = q * (1.0 - s) / self.tau_r - s / self.tau_d
+        return [dv, dm, dh, dn, ds, dq]
+
+    def simulate(self, tspan=None, x0=None):
+
+        x0 = self.set_initial_state() if x0 is None else x0
+        tspan = self.tspan if tspan is None else tspan
+        sol = odeint(self.f_sys, x0, tspan)
+
+        return {"t": tspan,
+                "v":    sol[:, 0],
+                "m":    sol[:, 1],
+                "h":    sol[:, 2],
+                "n":    sol[:, 3],
+                "s":    sol[:, 4],
+                "q":    sol[:, 5]
+                }

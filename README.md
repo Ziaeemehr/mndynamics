@@ -1,3 +1,6 @@
+[![Test](https://github.com/Ziaeemehr/mndynamics/actions/workflows/tests.yml/badge.svg)](https://github.com/Ziaeemehr/mndynamics/actions/workflows/tests.yml)
+[![Binder](https://mybinder.org/badge_logo.svg)](https://mybinder.org/v2/gh/Ziaeemehr/mndynamics/main?labpath=mndynamics%2Fexamples%2FIntro.ipynb)
+
 ### Modeling Neural Dynamics
 -  An Introduction to Modeling Neuronal Dynamics - Christoph Borgers in python
 
@@ -31,4 +34,4 @@ pip install "git+https://github.com/Ziaeemehr/mndynamics.git"
  myBinder interface to run the notebooks online. 
 </p>
 
-[![Binder](https://mybinder.org/badge_logo.svg)](https://mybinder.org/v2/gh/Ziaeemehr/mndynamics/main?labpath=mndynamics%2Fexamples%2FIntro.ipynb)
+

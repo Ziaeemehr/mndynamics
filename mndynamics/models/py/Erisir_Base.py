@@ -22,7 +22,7 @@ class Erisir(object):
 
     def set_parameters(self, par={}):
 
-        self._par = self.get_default_parameters()    
+        self._par = self.get_default_parameters()
         self._par.update(par)
 
         for key in self._par.keys():
@@ -54,9 +54,9 @@ class Erisir(object):
             'dt': 0.01
         }
         return params
-    
+
     def set_initial_state(self):
-        
+
         x0 = [self.v0,
               self.n_inf(self.v0),
               self.h_inf(self.v0)]
@@ -104,7 +104,7 @@ class Erisir(object):
         return [dv, dn, dh]
 
     def simulate(self, tspan=None, x0=None):
-        
+
         x0 = self.set_initial_state() if x0 is None else x0
         tspan = self.tspan if tspan is None else tspan
         sol = odeint(self.f_sys, x0, tspan)
@@ -119,7 +119,7 @@ class Erisir(object):
 class ErisirM(Erisir):
     def __init__(self, par={}) -> None:
         super().__init__(par)
-    
+
     def __call__(self) -> None:
         print("Modified Erisir Model of an Inhibitory Interneuron in Mouse Cortex")
         return self._par
@@ -127,12 +127,11 @@ class ErisirM(Erisir):
     def __str__(self) -> str:
         return "Modified Erisir Model of an Inhibitory Interneuron in Mouse Cortex"
 
-    
     def f_sys(self, x0, t):
         '''
         define Modified Erisir Model
         '''
-        v, n, h, = x0
+        v, n, h = x0
         m = self.alpha_m(v) / (self.alpha_m(v) + self.beta_m(v))
         dv = self.i_ext - self.g_na * h * m ** 3 * \
             (v - self.v_na) - self.g_k * n ** 4 * \
@@ -141,6 +140,7 @@ class ErisirM(Erisir):
         dh = self.alpha_h(v) * (1.0 - h) - self.beta_h(v) * h
 
         return [dv, dn, dh]
+
 
 class Erisir_F_I_CURVE(Erisir):
 
@@ -184,20 +184,19 @@ class Erisir_F_I_CURVE(Erisir):
         for direction in directions:
             freq = np.zeros(len(vec_i_ext))
             x0 = None
-            
+
             if direction == "backward":
                 vec_i_ext = vec_i_ext[::-1]
-            
+
             for ii in tqdm(range(len(vec_i_ext)), desc=direction):
                 num_spikes = 0
                 t_spikes = []
                 i_ext = self.i_ext = vec_i_ext[ii]
-            
+
                 # set the last state as the initial state
                 if ii > 0:
                     x0 = [v[-1], h[-1], n[-1]]
 
-            
                 sol = self.simulate(tspan, x0=x0)
                 v = sol['v']
                 h = sol['h']
@@ -217,14 +216,14 @@ class Erisir_F_I_CURVE(Erisir):
                             freq[ii] = 0.0
                             # print ("I =%10.3f, f =%10.2f" % (i_ext, freq[ii]))
                             break
-                    
+
                     # spike detection
                     if (i > 0) & (v[i-1] < v_thr) & (v[i] >= v_thr):
                         num_spikes += 1
                         tmp = ((i - 1) * dt * (v[i - 1] - v_thr) +
-                            i * dt * (v_thr - v[i])) / (v[i - 1] - v[i])
+                               i * dt * (v_thr - v[i])) / (v[i - 1] - v[i])
                         t_spikes.append(tmp)
-        
+
                     if num_spikes == 4:
                         freq[ii] = 1000.0 / (t_spikes[-1] - t_spikes[-2])
                         # print ("I =%10.3f, f =%10.2f" % (i_ext, freq[ii]))
@@ -240,7 +239,7 @@ class Erisir_F_I_CURVE(Erisir):
         '''
         directions = list(data.keys())
         directions.remove('i_ext')
-        
+
         ax = plt.gca() if ax is None else ax
         for direction in directions:
             f = data[direction]
@@ -248,7 +247,8 @@ class Erisir_F_I_CURVE(Erisir):
             if direction == 'forward':
                 ax.plot(I, f, 'ro', fillstyle="none", ms=8, label='forward')
             elif direction == 'backward':
-                ax.plot(I[::-1], f[::-1], "bo", fillstyle="none", label='backward')
+                ax.plot(I[::-1], f[::-1], "bo",
+                        fillstyle="none", label='backward')
             else:
                 raise ValueError("direction must be 'forward' or 'backward'")
 
@@ -256,5 +256,72 @@ class Erisir_F_I_CURVE(Erisir):
         ax.set_ylabel('frequency [Hz]')
         ax.legend()
         return ax
-            
-    
+
+
+class Erisir_Burst(Erisir):
+    '''
+    The Erisir neuron with a slow potassium current that is strengthened by firing
+    which turns the neuron into a burster.
+
+    Reference
+    ---------
+    An introduction to modeling neuronal dynamics, Borgers, Chapter 19.
+    '''
+
+    def __init__(self, par={}) -> None:
+        super().__init__(par)
+
+    def __str__(self) -> str:
+        return "Bursty Erisir Model"
+
+    def __call__(self) -> None:
+        print("Bursty Erisir Model")
+        return self._par
+
+    def get_default_parameters(self):
+
+        params = super().get_default_parameters()
+        params.update({'g_k_slow': 1.5,
+                       'i_ext': 7.5,
+                       "tau_n_slow": 100.0})
+        return params
+
+    def set_initial_state(self):
+
+        x0 = [self.v0,
+              self.n_inf(self.v0),
+              self.h_inf(self.v0),
+              self.n_slow_inf(self.v0)
+              ]
+        return x0
+
+    def n_slow_inf(self, v):
+        return 1.0 / (1.0 + np.exp((-20.0 - v) / 5.0))
+
+    def f_sys(self, x0, t):
+
+        v, n, h, n_slow = x0
+        m = self.alpha_m(v) / (self.alpha_m(v) + self.beta_m(v))
+        dv = self.i_ext - \
+            self.g_na * h * m ** 3 * (v - self.v_na) - \
+            self.g_k * n ** 2 * (v - self.v_k) - \
+            self.g_l * (v - self.v_l) - \
+            self.g_k_slow * n_slow * (v - self.v_k)
+        dn = self.alpha_n(v) * (1.0 - n) - self.beta_n(v) * n
+        dh = self.alpha_h(v) * (1.0 - h) - self.beta_h(v) * h
+        dn_slow = (self.n_slow_inf(v)-n_slow) / self.tau_n_slow
+
+        return np.array([dv, dn, dh, dn_slow])
+
+    def simulate(self, tspan=None, x0=None):
+
+        x0 = self.set_initial_state() if x0 is None else x0
+        tspan = self.tspan if tspan is None else tspan
+        sol = odeint(self.f_sys, x0, tspan)
+
+        return {"t": tspan,
+                "v":    sol[:, 0],
+                "h":    sol[:, 1],
+                "n":    sol[:, 2],
+                'n_slow': sol[:, 3]
+                }

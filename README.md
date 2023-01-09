@@ -21,6 +21,8 @@ or more recent updates from source code:
 
 ```sh
 pip3 install -e .
+# or
+pip install "git+https://github.com/Ziaeemehr/mndynamics.git"
 ```
 
 

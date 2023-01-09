@@ -124,7 +124,7 @@ class WB_F_I_CURVE(WB):
 
     def __call__(self) -> None:
         print("F-I Curve Wang-Buzsaki Model")
-        return super().__call__()
+        return self._par
 
     def __str__(self) -> str:
         return "F-I Curve Wang-Buzsaki Model"
@@ -151,7 +151,7 @@ class WB_F_I_CURVE(WB):
         N = int(1000 / dt)
         v_thr = self.v_thr
         data = {"i_ext": vec_i_ext}
-        if directions is 'both':
+        if directions == 'both':
             directions = ['forward', 'backward']
         else:
             directions = [directions]

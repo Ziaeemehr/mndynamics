@@ -1,7 +1,9 @@
 import numpy as np
+from tqdm import tqdm
 from numpy import exp
 import matplotlib.pyplot as plt
 from scipy.integrate import odeint
+from mndynamics.utility import is_sequence
 
 
 class Erisir(object):
@@ -45,6 +47,7 @@ class Erisir(object):
             'v_k': -90.0,
             'v_na': 60.0,
             'v_l': -70.0,
+            'v_thr': -20.0,
             'i_ext': 7.0,
             't_end': 100.0,
             'v0': -70.0,
@@ -138,4 +141,120 @@ class ErisirM(Erisir):
         dh = self.alpha_h(v) * (1.0 - h) - self.beta_h(v) * h
 
         return [dv, dn, dh]
+
+class Erisir_F_I_CURVE(Erisir):
+
+    def __init__(self, par={}) -> None:
+        super().__init__(par)
+
+    def __call__(self):
+        print("F-I Curve of Erisir Model of an Inhibitory Interneuron in Mouse Cortex")
+        return self._par
+
+    def __str__(self) -> str:
+        return "F-I Curve of Erisir Model of an Inhibitory Interneuron in Mouse Cortex"
+
+    def simulate_F_I(self, vec_i_ext, tspan=None, directions='both'):
+        '''
+        Simulate the F-I curve with a sequence of i_ext
+
+        Parameters
+        ----------
+        vec_i_ext : sequence
+            Sequence of i_ext values    
+        tspan : sequence, optional
+            Time span of the simulation. The default is None.
+        direction : str, optional
+            Direction of the simulation. The default is None.
+            options: 'forward', 'backward', 'both'
+        '''
+
+        assert(is_sequence(vec_i_ext)), "vec_i_ext must be a sequence"
+        tspan = self.tspan if tspan is None else tspan
+        num_steps = len(tspan)
+        dt = tspan[1] - tspan[0]
+        N = int(1000 / dt)
+        v_thr = self.v_thr
+        data = {"i_ext": vec_i_ext}
+        if directions == 'both':
+            directions = ['forward', 'backward']
+        else:
+            directions = [directions]
+
+        for direction in directions:
+            freq = np.zeros(len(vec_i_ext))
+            x0 = None
+            
+            if direction == "backward":
+                vec_i_ext = vec_i_ext[::-1]
+            
+            for ii in tqdm(range(len(vec_i_ext)), desc=direction):
+                num_spikes = 0
+                t_spikes = []
+                i_ext = self.i_ext = vec_i_ext[ii]
+            
+                # set the last state as the initial state
+                if ii > 0:
+                    x0 = [v[-1], h[-1], n[-1]]
+
+            
+                sol = self.simulate(tspan, x0=x0)
+                v = sol['v']
+                h = sol['h']
+                n = sol['n']
+                # find steady state
+                for i in range(num_steps):
+                    if ((i % N) == 0) and (i > 0):
+                        maxv = max(v[i - N:i])
+                        minv = min(v[i - N:i])
+                        maxn = max(n[i - N:i])
+                        minn = min(n[i - N:i])
+                        maxh = max(h[i - N:i])
+                        minh = min(h[i - N:i])
+                        if (((maxv - minv) < 0.0001 * abs(maxv + minv)) &
+                            ((maxh - minh) < 0.0001 * abs(maxh + minh)) &
+                                ((maxn - minn) < 0.0001 * abs(maxn + minn))):
+                            freq[ii] = 0.0
+                            # print ("I =%10.3f, f =%10.2f" % (i_ext, freq[ii]))
+                            break
+                    
+                    # spike detection
+                    if (i > 0) & (v[i-1] < v_thr) & (v[i] >= v_thr):
+                        num_spikes += 1
+                        tmp = ((i - 1) * dt * (v[i - 1] - v_thr) +
+                            i * dt * (v_thr - v[i])) / (v[i - 1] - v[i])
+                        t_spikes.append(tmp)
+        
+                    if num_spikes == 4:
+                        freq[ii] = 1000.0 / (t_spikes[-1] - t_spikes[-2])
+                        # print ("I =%10.3f, f =%10.2f" % (i_ext, freq[ii]))
+                        break
+            data[direction] = freq
+        if "backward" in data.keys():
+            data['backward'] = data['backward'][::-1]
+        return data
+
+    def plot_F_I(self, data, ax=None):
+        '''
+        plot F-I curve
+        '''
+        directions = list(data.keys())
+        directions.remove('i_ext')
+        
+        ax = plt.gca() if ax is None else ax
+        for direction in directions:
+            f = data[direction]
+            I = data['i_ext']
+            if direction == 'forward':
+                ax.plot(I, f, 'ro', fillstyle="none", ms=8, label='forward')
+            elif direction == 'backward':
+                ax.plot(I[::-1], f[::-1], "bo", fillstyle="none", label='backward')
+            else:
+                raise ValueError("direction must be 'forward' or 'backward'")
+
+        ax.set_xlabel(r'$I [\mu A/cm^2]$', labelpad=15)
+        ax.set_ylabel('frequency [Hz]')
+        ax.legend()
+        return ax
+            
     

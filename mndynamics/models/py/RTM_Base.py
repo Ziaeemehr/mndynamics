@@ -802,3 +802,72 @@ in Rat Hippocampus with gradual rise synapse."""
                 "s":    sol[:, 4],
                 "q":    sol[:, 5]
                 }
+
+
+class RTM_2s(RTM):
+    """
+    Reduced Traub-Miles Model of a Pyramidal Neuron in Rat Hippocampus
+    with 2 variable for synaptic gating variables. Eq 20.8-10
+
+    """
+
+    def __init__(self, par: dict = {}) -> None:
+        super().__init__(par)
+
+    def __call__(self) -> None:
+        print("""Reduced Traub-Miles Model of a Pyramidal Neuron 
+in Rat Hippocampus with 2 synaptic gating variables (Eq 20.8-10).""")
+        return self._par
+
+    def __str__(self) -> str:
+        return """Reduced Traub-Miles Model of a Pyramidal Neuron 
+in Rat Hippocampus with 2 synaptic gating variables (Eq 20.8-10)."""
+
+    def get_default_parameters(self):
+        params = super().get_default_parameters()
+        params.update({'tau_r': 300.0,
+                       'tau_d': 10.0, 
+                       'tau_d_q': 10.0,
+                       't_end':2000.0})
+        return params
+
+    def set_initial_state(self):
+
+        x0 = [self.v0,
+              self.m_inf(self.v0),
+              self.h_inf(self.v0),
+              self.n_inf(self.v0),
+              0.0, 
+              0.0]
+        return x0
+
+    def f_sys(self, x0, t):
+        '''
+        define RTM Model
+        '''
+        v, m, h, n, s, q = x0
+        dv = (self.i_ext - self.g_na * m**3 * h * (v - self.v_na) -
+              self.g_k * n**4 * (v - self.v_k) - self.g_l * (v - self.v_l)) / self.c
+        dm = self.alpha_m(v) * (1.0 - m) - self.beta_m(v) * m
+        dh = self.alpha_h(v) * (1.0 - h) - self.beta_h(v) * h
+        dn = self.alpha_n(v) * (1.0 - n) - self.beta_n(v) * n
+        dq = 0.5 * (1.0+np.tanh(0.1 * v)) * (1-q)*10 - q/self.tau_d_q
+        ds = q * (1.0 - s) / self.tau_r - s / self.tau_d
+        return [dv, dm, dh, dn, ds, dq]
+
+    def simulate(self, tspan=None, x0=None):
+
+        x0 = self.set_initial_state() if x0 is None else x0
+        tspan = self.tspan if tspan is None else tspan
+        sol = odeint(self.f_sys, x0, tspan)
+
+        return {"t": tspan,
+                "v":    sol[:, 0],
+                "m":    sol[:, 1],
+                "h":    sol[:, 2],
+                "n":    sol[:, 3],
+                "s":    sol[:, 4],
+                "q":    sol[:, 5]
+                }
+    
+    

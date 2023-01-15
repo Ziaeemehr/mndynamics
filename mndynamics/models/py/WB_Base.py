@@ -234,7 +234,7 @@ class WB_F_I_CURVE(WB):
         return ax
 
 
-class WB_Net_Gap(object):
+class WB_Net_GJ(object):
 
     def __init__(self, par: dict = {}) -> None:
         self.check_parameters(par)

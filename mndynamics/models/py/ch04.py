@@ -7,7 +7,7 @@ from mndynamics.models.py.HH_Base import HH as _HH
 
 class HH_SOLUTION(_HH):
 
-    def __init__(self, par=None):
+    def __init__(self, par={}):
         super().__init__(par)
 
 

@@ -5,8 +5,6 @@
 ### Modeling Neural Dynamics
 -  An Introduction to Modeling Neuronal Dynamics - Christoph Borgers in python
 
-- Women-Life-Freedom ✌️
-
 ### installation
 
 <!-- #### from pip

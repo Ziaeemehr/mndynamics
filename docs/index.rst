@@ -19,8 +19,3 @@ For runnig the notebooks online, there is no need for installation and just use 
     # or
     pip install "git+https://github.com/Ziaeemehr/mndynamics.git"
 
-
-.. image:: ../image.png
-    :width: 400
-    :alt: Alternative text
-    :align: center

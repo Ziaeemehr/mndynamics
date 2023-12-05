@@ -6,3 +6,4 @@ networkx
 # cloud_sptheme
 matplotlib
 numpydoc
+setuptools_scm

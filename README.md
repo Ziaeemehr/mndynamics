@@ -30,7 +30,7 @@ pip install "git+https://github.com/Ziaeemehr/mndynamics.git"
 ```
 
 
-![Cover](https://github.com/Ziaeemehr/mndynamics/blob/main/Screenshot%202022-12-20%20at%2023.24.36.png )
+![Cover](https://github.com/Ziaeemehr/mndynamics/blob/main/image.png )
 <p align="center">
  myBinder interface to run the notebooks online. 
 </p>

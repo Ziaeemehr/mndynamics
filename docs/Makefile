@@ -5,7 +5,7 @@
 SPHINXOPTS    =
 SPHINXBUILD   = sphinx-build
 SPHINXPROJ    = MNDYNAMICS
-BUILDDIR      = build
+BUILDDIR      = _build
 
 
 

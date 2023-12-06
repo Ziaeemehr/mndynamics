@@ -1,13 +1,5 @@
 name: documentation
-on:
-  push:
-    branches:
-      - main  # or your main branch
-  pull_request:
-    branches:
-      - main  # or your main branch
-  workflow_dispatch:
-
+on: [push]
 jobs:
   docs:
     runs-on: ubuntu-latest

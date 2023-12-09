@@ -9,7 +9,6 @@ class HH(object):
     """
     Hudgkin Huxley Model
 
-    Usage:
     >>> par = {'i_ext': 1.5, 't_end': 100.0, 'v0': -70.0, 'dt': 0.01}
     >>> model = HH(par)
     >>> sol = model.simulate()

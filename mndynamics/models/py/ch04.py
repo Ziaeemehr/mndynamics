@@ -12,6 +12,10 @@ class HH_SOLUTION(_HH):
 
 
 class HH_REFRACTORINESS(_HH):
+    '''
+    Refractoriness of the HH model.
+    
+    '''
 
     def __init__(self, par=None):
         super().__init__(par)
@@ -33,6 +37,24 @@ class HH_REFRACTORINESS(_HH):
         return [dv, dm, dh, dn]
     
     def simulate(self, tspan=None, *args):
+        '''
+        Simulate the HH model.
+
+        Parameters
+        ----------
+        tspan : array_like, optional
+            Time points (ms) at which to solve for membrane potential and gating variables.
+            Default is np.arange(0, 50, 0.01).
+        args : tuple, optional
+            Additional arguments to pass to the ODE solver.
+
+        Returns
+        -------
+        dict
+            Dictionary with keys "t", "v", "m", "h", "n" and values being the corresponding
+            time points and membrane potential and gating variables.
+        
+        '''
         
         x0 = self.set_initial_state()
 

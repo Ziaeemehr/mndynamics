@@ -11,6 +11,10 @@ class HH_GATING_VARIABLES(_HH):
         super().__init__(par)
 
     def plot(self):
+        '''
+        Plot gating variables and time constants of the HH model
+        
+        '''
 
         fig, ax = plt.subplots(nrows=3, ncols=2, figsize=(7, 7))
         v = np.arange(-100, 50, 0.01)

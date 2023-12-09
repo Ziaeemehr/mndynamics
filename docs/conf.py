@@ -13,7 +13,9 @@ extensions = [
     'sphinx.ext.autosummary',
     'sphinx.ext.mathjax',
     'numpydoc',
-    'sphinx.ext.graphviz'
+    'sphinx.ext.graphviz',
+	'sphinx.ext.viewcode',
+	'nbsphinx'
 ]
 
 source_suffix = '.rst'
@@ -29,6 +31,7 @@ add_module_names = False
 html_theme = 'nature'
 pygments_style = 'colorful'
 # htmlhelp_basename = 'JiTCODEdoc'
+exclude_patterns = ['_build', '**.ipynb_checkpoints']
 
 numpydoc_show_class_members = False
 autodoc_member_order = 'bysource'

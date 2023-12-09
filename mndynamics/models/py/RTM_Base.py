@@ -11,7 +11,6 @@ class RTM(object):
     """
     Reduced Traub-Miles Model of a Pyramidal Neuron in Rat Hippocampus
 
-    Usage:
     >>> par = {'i_ext': 1.5, 't_end': 100.0, 'v0': -70.0, 'dt': 0.01}
     >>> model = RTM(par)
     >>> sol = model.simulate()
@@ -132,7 +131,6 @@ class RTM_M(RTM):
     Reduced Traub-Miles neuron model with M-current
     Simulate the model with parameters given in the dictionary par:
 
-    Usage:
     >>> par = {'i_ext': 1.5, 't_end': 100.0, 'v0': -70.0, 'dt': 0.01}
     >>> model = RTM_M(par)
     >>> sol = model.simulate()
@@ -310,8 +308,7 @@ class RTM_2D(RTM):
     Reduced 2-dimensional Traub-Miles Model of a Pyramidal Neuron in Rat Hippocampus
     as defined in Eq. 12.1-2 in [1]
 
-    References
-    ----------
+    References:
     [1] Börgers, C., 2017. An introduction to modeling neuronal dynamics (Vol. 66). Berlin: Springer.
     '''
 

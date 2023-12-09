@@ -263,8 +263,7 @@ class Erisir_Burst(Erisir):
     The Erisir neuron with a slow potassium current that is strengthened by firing
     which turns the neuron into a burster.
 
-    Reference
-    ---------
+    Reference:
     An introduction to modeling neuronal dynamics, Borgers, Chapter 19.
     '''
 

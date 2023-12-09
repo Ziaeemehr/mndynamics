@@ -60,17 +60,19 @@ class FN(object):
 
     def simulate(self, tspan=None, x0=None):
         """
-        simulate the model
+        simulate the FN model
 
         Parameters
         ----------
-        tspan : array
-            time span for simulation
+        tspan : array-like, optional
+            time span for simulation, default is None
         
         Returns
         -------
         dict: {t, v, n}
-            time series of v, n
+            t: time span
+            v: membrane potential
+            n: gating variable
 
         """
         

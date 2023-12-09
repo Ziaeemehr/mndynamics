@@ -27,14 +27,16 @@ Indices and tables
 * :ref:`modindex`
 * :ref:`search`
 
+
+
+Notebooks
+*****************
+
 .. toctree::
    :maxdepth: 2
    :caption: Contents:
-
-
-Quick Start
-*****************
-
+   
+   notebooks
 
 Modules 
 *****************

@@ -11,7 +11,6 @@ class Inapik(object):
     """
     Inapik neuron model 
 
-    Usage:
     >>> par = {'}
     >>> model = Inapik(par)
     >>> sol = model.simulate()

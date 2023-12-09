@@ -9,7 +9,6 @@ class LIF(object):
     """
     Linear Integrate-and-Fire (LIF) Model
 
-    Usage:
     >>> par = {'i_ext': 0.11, 't_end': 100.0, 'v0': -70.0, 'dt': 0.01}
     >>> model = LIF(par)
     >>> sol = model.simulate()
@@ -99,7 +98,6 @@ class LIF_Addapt(LIF):
     """
     Linear Integrate-and-Fire (LIF) Model with Adaptation
 
-    Usage:
     >>> par = {'i_ext': 0.13, 't_end': 100.0, 'v0': -70.0, 'dt': 0.01}
     >>> model = LIF_Addapt(par)
     >>> sol = model.simulate()

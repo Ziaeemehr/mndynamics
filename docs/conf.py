@@ -14,8 +14,8 @@ extensions = [
     'sphinx.ext.mathjax',
     'numpydoc',
     'sphinx.ext.graphviz',
-	'sphinx.ext.viewcode',
-	'nbsphinx'
+	'sphinx.ext.viewcode'
+	# 'nbsphinx'
 ]
 
 source_suffix = '.rst'

@@ -17,6 +17,6 @@ e/
 
 # Byte-compiled / optimized / DLL files
 __pycache__/
-build/
+_build/
 dist/
 .DS_Store

@@ -19,3 +19,28 @@ For runnig the notebooks online, there is no need for installation and just use 
     # or
     pip install "git+https://github.com/Ziaeemehr/mndynamics.git"
 
+
+Indices and tables
+-------------------
+
+* :ref:`genindex`
+* :ref:`modindex`
+* :ref:`search`
+
+.. toctree::
+   :maxdepth: 2
+   :caption: Contents:
+
+
+Quick Start
+*****************
+
+
+Modules 
+*****************
+
+.. toctree::
+    :maxdepth: 2
+    :caption: Contents:
+
+    modules

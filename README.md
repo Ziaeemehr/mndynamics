@@ -1,7 +1,7 @@
 [![Test](https://github.com/Ziaeemehr/mndynamics/actions/workflows/tests.yml/badge.svg)](https://github.com/Ziaeemehr/mndynamics/actions/workflows/tests.yml)
 <a href="https://colab.research.google.com/github/Ziaeemehr/mndynamics/blob/main/mndynamics/examples/Intro.ipynb" target="_parent"><img src="https://colab.research.google.com/assets/colab-badge.svg" alt="Open In Colab"/></a>
 [![Binder](https://mybinder.org/badge_logo.svg)](https://mybinder.org/v2/gh/Ziaeemehr/mndynamics/main?labpath=mndynamics%2Fexamples%2FIntro.ipynb)
-[![Documentation Status](https://github.com/Ziaeemehr/mndynamics/actions/workflows/documents/badge.svg
+[![Documentation Status](https://github.com/Ziaeemehr/mndynamics/actions/workflows/documents.yml/badge.svg
 )](https://ziaeemehr.github.io/mndynamics/)
 
 

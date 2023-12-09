@@ -1,0 +1,411 @@
+<!DOCTYPE html>
+
+<html lang="en" data-content_root="../../../../">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>mndynamics.models.py.Erisir_Base &#8212; mndynamics 0.1.dev1+g8e5db4d documentation</title>
+    <link rel="stylesheet" type="text/css" href="../../../../_static/pygments.css?v=82a976d7" />
+    <link rel="stylesheet" type="text/css" href="../../../../_static/nature.css?v=601dbdee" />
+    <link rel="stylesheet" type="text/css" href="../../../../_static/graphviz.css?v=eafc0fe6" />
+    <script src="../../../../_static/documentation_options.js?v=5007a425"></script>
+    <script src="../../../../_static/doctools.js?v=888ff710"></script>
+    <script src="../../../../_static/sphinx_highlight.js?v=dc90522c"></script>
+    <link rel="index" title="Index" href="../../../../genindex.html" />
+    <link rel="search" title="Search" href="../../../../search.html" /> 
+  </head><body>
+    <div class="related" role="navigation" aria-label="related navigation">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../../../../genindex.html" title="General Index"
+             accesskey="I">index</a></li>
+        <li class="right" >
+          <a href="../../../../py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li class="nav-item nav-item-0"><a href="../../../../index.html">mndynamics 0.1.dev1+g8e5db4d documentation</a> &#187;</li>
+          <li class="nav-item nav-item-1"><a href="../../../index.html" accesskey="U">Module code</a> &#187;</li>
+        <li class="nav-item nav-item-this"><a href="">mndynamics.models.py.Erisir_Base</a></li> 
+      </ul>
+    </div>  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body" role="main">
+            
+  <h1>Source code for mndynamics.models.py.Erisir_Base</h1><div class="highlight"><pre>
+<span></span><span class="kn">import</span> <span class="nn">numpy</span> <span class="k">as</span> <span class="nn">np</span>
+<span class="kn">from</span> <span class="nn">tqdm</span> <span class="kn">import</span> <span class="n">tqdm</span>
+<span class="kn">from</span> <span class="nn">numpy</span> <span class="kn">import</span> <span class="n">exp</span>
+<span class="kn">import</span> <span class="nn">matplotlib.pyplot</span> <span class="k">as</span> <span class="nn">plt</span>
+<span class="kn">from</span> <span class="nn">scipy.integrate</span> <span class="kn">import</span> <span class="n">odeint</span>
+<span class="kn">from</span> <span class="nn">mndynamics.utility</span> <span class="kn">import</span> <span class="n">is_sequence</span>
+
+
+<span class="k">class</span> <span class="nc">Erisir</span><span class="p">(</span><span class="nb">object</span><span class="p">):</span>
+
+    <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">par</span><span class="o">=</span><span class="p">{})</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">check_parameters</span><span class="p">(</span><span class="n">par</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">set_parameters</span><span class="p">(</span><span class="n">par</span><span class="p">)</span>
+
+    <span class="k">def</span> <span class="fm">__call__</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;Erisir Model of an Inhibitory Interneuron in Mouse Cortex&quot;</span><span class="p">)</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_par</span>
+
+    <span class="k">def</span> <span class="fm">__str__</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
+        <span class="k">return</span> <span class="s2">&quot;Erisir Model of an Inhibitory Interneuron in Mouse Cortex&quot;</span>
+
+    <span class="k">def</span> <span class="nf">set_parameters</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">par</span><span class="o">=</span><span class="p">{}):</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">_par</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">get_default_parameters</span><span class="p">()</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_par</span><span class="o">.</span><span class="n">update</span><span class="p">(</span><span class="n">par</span><span class="p">)</span>
+
+        <span class="k">for</span> <span class="n">key</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">_par</span><span class="o">.</span><span class="n">keys</span><span class="p">():</span>
+            <span class="nb">setattr</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">key</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">_par</span><span class="p">[</span><span class="n">key</span><span class="p">])</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">tspan</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">arange</span><span class="p">(</span><span class="mf">0.0</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">t_end</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">dt</span><span class="p">)</span>
+
+    <span class="k">def</span> <span class="nf">check_parameters</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">par</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&#39;&#39;&#39;</span>
+<span class="sd">        Check if the parameters are valid</span>
+<span class="sd">        &#39;&#39;&#39;</span>
+        <span class="k">for</span> <span class="n">key</span> <span class="ow">in</span> <span class="n">par</span><span class="o">.</span><span class="n">keys</span><span class="p">():</span>
+            <span class="k">if</span> <span class="n">key</span> <span class="ow">not</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">get_default_parameters</span><span class="p">()</span><span class="o">.</span><span class="n">keys</span><span class="p">():</span>
+                <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s1">&#39;Parameter </span><span class="si">{}</span><span class="s1"> is not valid&#39;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">key</span><span class="p">))</span>
+
+    <span class="k">def</span> <span class="nf">get_default_parameters</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+
+        <span class="n">params</span> <span class="o">=</span> <span class="p">{</span>
+            <span class="s1">&#39;c&#39;</span><span class="p">:</span> <span class="mf">1.0</span><span class="p">,</span>
+            <span class="s1">&#39;g_k&#39;</span><span class="p">:</span> <span class="mf">224.0</span><span class="p">,</span>
+            <span class="s1">&#39;g_na&#39;</span><span class="p">:</span> <span class="mf">112.0</span><span class="p">,</span>
+            <span class="s1">&#39;g_l&#39;</span><span class="p">:</span> <span class="mf">0.5</span><span class="p">,</span>
+            <span class="s1">&#39;v_k&#39;</span><span class="p">:</span> <span class="o">-</span><span class="mf">90.0</span><span class="p">,</span>
+            <span class="s1">&#39;v_na&#39;</span><span class="p">:</span> <span class="mf">60.0</span><span class="p">,</span>
+            <span class="s1">&#39;v_l&#39;</span><span class="p">:</span> <span class="o">-</span><span class="mf">70.0</span><span class="p">,</span>
+            <span class="s1">&#39;v_thr&#39;</span><span class="p">:</span> <span class="o">-</span><span class="mf">20.0</span><span class="p">,</span>
+            <span class="s1">&#39;i_ext&#39;</span><span class="p">:</span> <span class="mf">7.0</span><span class="p">,</span>
+            <span class="s1">&#39;t_end&#39;</span><span class="p">:</span> <span class="mf">100.0</span><span class="p">,</span>
+            <span class="s1">&#39;v0&#39;</span><span class="p">:</span> <span class="o">-</span><span class="mf">70.0</span><span class="p">,</span>
+            <span class="s1">&#39;dt&#39;</span><span class="p">:</span> <span class="mf">0.01</span>
+        <span class="p">}</span>
+        <span class="k">return</span> <span class="n">params</span>
+
+    <span class="k">def</span> <span class="nf">set_initial_state</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+
+        <span class="n">x0</span> <span class="o">=</span> <span class="p">[</span><span class="bp">self</span><span class="o">.</span><span class="n">v0</span><span class="p">,</span>
+              <span class="bp">self</span><span class="o">.</span><span class="n">n_inf</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">v0</span><span class="p">),</span>
+              <span class="bp">self</span><span class="o">.</span><span class="n">h_inf</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">v0</span><span class="p">)]</span>
+        <span class="k">return</span> <span class="n">x0</span>
+
+    <span class="k">def</span> <span class="nf">alpha_h</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">v</span><span class="p">):</span>
+        <span class="k">return</span> <span class="mf">0.0035</span> <span class="o">/</span> <span class="n">exp</span><span class="p">(</span><span class="n">v</span> <span class="o">/</span> <span class="mf">24.186</span><span class="p">)</span>
+
+    <span class="k">def</span> <span class="nf">alpha_m</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">v</span><span class="p">):</span>
+        <span class="k">return</span> <span class="mi">40</span> <span class="o">*</span> <span class="p">(</span><span class="mf">75.5</span> <span class="o">-</span> <span class="n">v</span><span class="p">)</span> <span class="o">/</span> <span class="p">(</span><span class="n">exp</span><span class="p">((</span><span class="mf">75.5</span> <span class="o">-</span> <span class="n">v</span><span class="p">)</span> <span class="o">/</span> <span class="mf">13.5</span><span class="p">)</span> <span class="o">-</span> <span class="mi">1</span><span class="p">)</span>
+
+    <span class="k">def</span> <span class="nf">alpha_n</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">v</span><span class="p">):</span>
+        <span class="k">return</span> <span class="p">(</span><span class="mi">95</span> <span class="o">-</span> <span class="n">v</span><span class="p">)</span> <span class="o">/</span> <span class="p">(</span><span class="n">exp</span><span class="p">((</span><span class="mi">95</span> <span class="o">-</span> <span class="n">v</span><span class="p">)</span> <span class="o">/</span> <span class="mf">11.8</span><span class="p">)</span> <span class="o">-</span> <span class="mi">1</span><span class="p">)</span>
+
+    <span class="k">def</span> <span class="nf">beta_h</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">v</span><span class="p">):</span>
+        <span class="k">return</span> <span class="o">-</span> <span class="mf">0.017</span> <span class="o">*</span> <span class="p">(</span><span class="n">v</span> <span class="o">+</span> <span class="mf">51.25</span><span class="p">)</span> <span class="o">/</span> <span class="p">(</span><span class="n">exp</span><span class="p">(</span><span class="o">-</span><span class="p">(</span><span class="n">v</span> <span class="o">+</span> <span class="mf">51.25</span><span class="p">)</span> <span class="o">/</span> <span class="mf">5.2</span><span class="p">)</span> <span class="o">-</span> <span class="mi">1</span><span class="p">)</span>
+
+    <span class="k">def</span> <span class="nf">beta_m</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">v</span><span class="p">):</span>
+        <span class="k">return</span> <span class="mf">1.2262</span> <span class="o">/</span> <span class="n">exp</span><span class="p">(</span><span class="n">v</span> <span class="o">/</span> <span class="mf">42.248</span><span class="p">)</span>
+
+    <span class="k">def</span> <span class="nf">beta_n</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">v</span><span class="p">):</span>
+        <span class="k">return</span> <span class="mf">0.025</span> <span class="o">/</span> <span class="n">exp</span><span class="p">(</span><span class="n">v</span> <span class="o">/</span> <span class="mf">22.222</span><span class="p">)</span>
+
+    <span class="k">def</span> <span class="nf">h_inf</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">v</span><span class="p">):</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">alpha_h</span><span class="p">(</span><span class="n">v</span><span class="p">)</span> <span class="o">/</span> <span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">alpha_h</span><span class="p">(</span><span class="n">v</span><span class="p">)</span> <span class="o">+</span> <span class="bp">self</span><span class="o">.</span><span class="n">beta_h</span><span class="p">(</span><span class="n">v</span><span class="p">))</span>
+
+    <span class="k">def</span> <span class="nf">m_inf</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">v</span><span class="p">):</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">alpha_m</span><span class="p">(</span><span class="n">v</span><span class="p">)</span> <span class="o">/</span> <span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">alpha_m</span><span class="p">(</span><span class="n">v</span><span class="p">)</span> <span class="o">+</span> <span class="bp">self</span><span class="o">.</span><span class="n">beta_m</span><span class="p">(</span><span class="n">v</span><span class="p">))</span>
+
+    <span class="k">def</span> <span class="nf">n_inf</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">v</span><span class="p">):</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">alpha_n</span><span class="p">(</span><span class="n">v</span><span class="p">)</span> <span class="o">/</span> <span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">alpha_n</span><span class="p">(</span><span class="n">v</span><span class="p">)</span> <span class="o">+</span> <span class="bp">self</span><span class="o">.</span><span class="n">beta_n</span><span class="p">(</span><span class="n">v</span><span class="p">))</span>
+
+    <span class="k">def</span> <span class="nf">f_sys</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">x0</span><span class="p">,</span> <span class="n">t</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&#39;&#39;&#39;</span>
+<span class="sd">        define Erisir Model</span>
+<span class="sd">        &#39;&#39;&#39;</span>
+        <span class="n">v</span><span class="p">,</span> <span class="n">n</span><span class="p">,</span> <span class="n">h</span><span class="p">,</span> <span class="o">=</span> <span class="n">x0</span>
+        <span class="n">m</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">alpha_m</span><span class="p">(</span><span class="n">v</span><span class="p">)</span> <span class="o">/</span> <span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">alpha_m</span><span class="p">(</span><span class="n">v</span><span class="p">)</span> <span class="o">+</span> <span class="bp">self</span><span class="o">.</span><span class="n">beta_m</span><span class="p">(</span><span class="n">v</span><span class="p">))</span>
+        <span class="n">dv</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">i_ext</span> <span class="o">-</span> <span class="bp">self</span><span class="o">.</span><span class="n">g_na</span> <span class="o">*</span> <span class="n">h</span> <span class="o">*</span> <span class="n">m</span> <span class="o">**</span> <span class="mi">3</span> <span class="o">*</span> \
+            <span class="p">(</span><span class="n">v</span> <span class="o">-</span> <span class="bp">self</span><span class="o">.</span><span class="n">v_na</span><span class="p">)</span> <span class="o">-</span> <span class="bp">self</span><span class="o">.</span><span class="n">g_k</span> <span class="o">*</span> <span class="n">n</span> <span class="o">**</span> <span class="mi">2</span> <span class="o">*</span> \
+            <span class="p">(</span><span class="n">v</span> <span class="o">-</span> <span class="bp">self</span><span class="o">.</span><span class="n">v_k</span><span class="p">)</span> <span class="o">-</span> <span class="bp">self</span><span class="o">.</span><span class="n">g_l</span> <span class="o">*</span> <span class="p">(</span><span class="n">v</span> <span class="o">-</span> <span class="bp">self</span><span class="o">.</span><span class="n">v_l</span><span class="p">)</span>
+        <span class="n">dn</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">alpha_n</span><span class="p">(</span><span class="n">v</span><span class="p">)</span> <span class="o">*</span> <span class="p">(</span><span class="mf">1.0</span> <span class="o">-</span> <span class="n">n</span><span class="p">)</span> <span class="o">-</span> <span class="bp">self</span><span class="o">.</span><span class="n">beta_n</span><span class="p">(</span><span class="n">v</span><span class="p">)</span> <span class="o">*</span> <span class="n">n</span>
+        <span class="n">dh</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">alpha_h</span><span class="p">(</span><span class="n">v</span><span class="p">)</span> <span class="o">*</span> <span class="p">(</span><span class="mf">1.0</span> <span class="o">-</span> <span class="n">h</span><span class="p">)</span> <span class="o">-</span> <span class="bp">self</span><span class="o">.</span><span class="n">beta_h</span><span class="p">(</span><span class="n">v</span><span class="p">)</span> <span class="o">*</span> <span class="n">h</span>
+
+        <span class="k">return</span> <span class="p">[</span><span class="n">dv</span><span class="p">,</span> <span class="n">dn</span><span class="p">,</span> <span class="n">dh</span><span class="p">]</span>
+
+    <span class="k">def</span> <span class="nf">simulate</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">tspan</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">x0</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
+
+        <span class="n">x0</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">set_initial_state</span><span class="p">()</span> <span class="k">if</span> <span class="n">x0</span> <span class="ow">is</span> <span class="kc">None</span> <span class="k">else</span> <span class="n">x0</span>
+        <span class="n">tspan</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">tspan</span> <span class="k">if</span> <span class="n">tspan</span> <span class="ow">is</span> <span class="kc">None</span> <span class="k">else</span> <span class="n">tspan</span>
+        <span class="n">sol</span> <span class="o">=</span> <span class="n">odeint</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">f_sys</span><span class="p">,</span> <span class="n">x0</span><span class="p">,</span> <span class="n">tspan</span><span class="p">)</span>
+
+        <span class="k">return</span> <span class="p">{</span><span class="s2">&quot;t&quot;</span><span class="p">:</span> <span class="n">tspan</span><span class="p">,</span>
+                <span class="s2">&quot;v&quot;</span><span class="p">:</span>    <span class="n">sol</span><span class="p">[:,</span> <span class="mi">0</span><span class="p">],</span>
+                <span class="s2">&quot;h&quot;</span><span class="p">:</span>    <span class="n">sol</span><span class="p">[:,</span> <span class="mi">1</span><span class="p">],</span>
+                <span class="s2">&quot;n&quot;</span><span class="p">:</span>    <span class="n">sol</span><span class="p">[:,</span> <span class="mi">2</span><span class="p">]</span>
+                <span class="p">}</span>
+
+
+<span class="k">class</span> <span class="nc">ErisirM</span><span class="p">(</span><span class="n">Erisir</span><span class="p">):</span>
+    <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">par</span><span class="o">=</span><span class="p">{})</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="fm">__init__</span><span class="p">(</span><span class="n">par</span><span class="p">)</span>
+
+    <span class="k">def</span> <span class="fm">__call__</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;Modified Erisir Model of an Inhibitory Interneuron in Mouse Cortex&quot;</span><span class="p">)</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_par</span>
+
+    <span class="k">def</span> <span class="fm">__str__</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
+        <span class="k">return</span> <span class="s2">&quot;Modified Erisir Model of an Inhibitory Interneuron in Mouse Cortex&quot;</span>
+
+    <span class="k">def</span> <span class="nf">f_sys</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">x0</span><span class="p">,</span> <span class="n">t</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&#39;&#39;&#39;</span>
+<span class="sd">        define Modified Erisir Model</span>
+<span class="sd">        &#39;&#39;&#39;</span>
+        <span class="n">v</span><span class="p">,</span> <span class="n">n</span><span class="p">,</span> <span class="n">h</span> <span class="o">=</span> <span class="n">x0</span>
+        <span class="n">m</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">alpha_m</span><span class="p">(</span><span class="n">v</span><span class="p">)</span> <span class="o">/</span> <span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">alpha_m</span><span class="p">(</span><span class="n">v</span><span class="p">)</span> <span class="o">+</span> <span class="bp">self</span><span class="o">.</span><span class="n">beta_m</span><span class="p">(</span><span class="n">v</span><span class="p">))</span>
+        <span class="n">dv</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">i_ext</span> <span class="o">-</span> <span class="bp">self</span><span class="o">.</span><span class="n">g_na</span> <span class="o">*</span> <span class="n">h</span> <span class="o">*</span> <span class="n">m</span> <span class="o">**</span> <span class="mi">3</span> <span class="o">*</span> \
+            <span class="p">(</span><span class="n">v</span> <span class="o">-</span> <span class="bp">self</span><span class="o">.</span><span class="n">v_na</span><span class="p">)</span> <span class="o">-</span> <span class="bp">self</span><span class="o">.</span><span class="n">g_k</span> <span class="o">*</span> <span class="n">n</span> <span class="o">**</span> <span class="mi">4</span> <span class="o">*</span> \
+            <span class="p">(</span><span class="n">v</span> <span class="o">-</span> <span class="bp">self</span><span class="o">.</span><span class="n">v_k</span><span class="p">)</span> <span class="o">-</span> <span class="bp">self</span><span class="o">.</span><span class="n">g_l</span> <span class="o">*</span> <span class="p">(</span><span class="n">v</span> <span class="o">-</span> <span class="bp">self</span><span class="o">.</span><span class="n">v_l</span><span class="p">)</span>
+        <span class="n">dn</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">alpha_n</span><span class="p">(</span><span class="n">v</span><span class="p">)</span> <span class="o">*</span> <span class="p">(</span><span class="mf">1.0</span> <span class="o">-</span> <span class="n">n</span><span class="p">)</span> <span class="o">-</span> <span class="bp">self</span><span class="o">.</span><span class="n">beta_n</span><span class="p">(</span><span class="n">v</span><span class="p">)</span> <span class="o">*</span> <span class="n">n</span>
+        <span class="n">dh</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">alpha_h</span><span class="p">(</span><span class="n">v</span><span class="p">)</span> <span class="o">*</span> <span class="p">(</span><span class="mf">1.0</span> <span class="o">-</span> <span class="n">h</span><span class="p">)</span> <span class="o">-</span> <span class="bp">self</span><span class="o">.</span><span class="n">beta_h</span><span class="p">(</span><span class="n">v</span><span class="p">)</span> <span class="o">*</span> <span class="n">h</span>
+
+        <span class="k">return</span> <span class="p">[</span><span class="n">dv</span><span class="p">,</span> <span class="n">dn</span><span class="p">,</span> <span class="n">dh</span><span class="p">]</span>
+
+
+<span class="k">class</span> <span class="nc">Erisir_F_I_CURVE</span><span class="p">(</span><span class="n">Erisir</span><span class="p">):</span>
+
+    <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">par</span><span class="o">=</span><span class="p">{})</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="fm">__init__</span><span class="p">(</span><span class="n">par</span><span class="p">)</span>
+
+    <span class="k">def</span> <span class="fm">__call__</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;F-I Curve of Erisir Model of an Inhibitory Interneuron in Mouse Cortex&quot;</span><span class="p">)</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_par</span>
+
+    <span class="k">def</span> <span class="fm">__str__</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
+        <span class="k">return</span> <span class="s2">&quot;F-I Curve of Erisir Model of an Inhibitory Interneuron in Mouse Cortex&quot;</span>
+
+    <span class="k">def</span> <span class="nf">simulate_F_I</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">vec_i_ext</span><span class="p">,</span> <span class="n">tspan</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">directions</span><span class="o">=</span><span class="s1">&#39;both&#39;</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&#39;&#39;&#39;</span>
+<span class="sd">        Simulate the F-I curve with a sequence of i_ext</span>
+
+<span class="sd">        Parameters</span>
+<span class="sd">        ----------</span>
+<span class="sd">        vec_i_ext : sequence</span>
+<span class="sd">            Sequence of i_ext values    </span>
+<span class="sd">        tspan : sequence, optional</span>
+<span class="sd">            Time span of the simulation. The default is None.</span>
+<span class="sd">        direction : str, optional</span>
+<span class="sd">            Direction of the simulation. The default is None.</span>
+<span class="sd">            options: &#39;forward&#39;, &#39;backward&#39;, &#39;both&#39;</span>
+<span class="sd">        &#39;&#39;&#39;</span>
+
+        <span class="k">assert</span><span class="p">(</span><span class="n">is_sequence</span><span class="p">(</span><span class="n">vec_i_ext</span><span class="p">)),</span> <span class="s2">&quot;vec_i_ext must be a sequence&quot;</span>
+        <span class="n">tspan</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">tspan</span> <span class="k">if</span> <span class="n">tspan</span> <span class="ow">is</span> <span class="kc">None</span> <span class="k">else</span> <span class="n">tspan</span>
+        <span class="n">num_steps</span> <span class="o">=</span> <span class="nb">len</span><span class="p">(</span><span class="n">tspan</span><span class="p">)</span>
+        <span class="n">dt</span> <span class="o">=</span> <span class="n">tspan</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span> <span class="o">-</span> <span class="n">tspan</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>
+        <span class="n">N</span> <span class="o">=</span> <span class="nb">int</span><span class="p">(</span><span class="mi">1000</span> <span class="o">/</span> <span class="n">dt</span><span class="p">)</span>
+        <span class="n">v_thr</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">v_thr</span>
+        <span class="n">data</span> <span class="o">=</span> <span class="p">{</span><span class="s2">&quot;i_ext&quot;</span><span class="p">:</span> <span class="n">vec_i_ext</span><span class="p">}</span>
+        <span class="k">if</span> <span class="n">directions</span> <span class="o">==</span> <span class="s1">&#39;both&#39;</span><span class="p">:</span>
+            <span class="n">directions</span> <span class="o">=</span> <span class="p">[</span><span class="s1">&#39;forward&#39;</span><span class="p">,</span> <span class="s1">&#39;backward&#39;</span><span class="p">]</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">directions</span> <span class="o">=</span> <span class="p">[</span><span class="n">directions</span><span class="p">]</span>
+
+        <span class="k">for</span> <span class="n">direction</span> <span class="ow">in</span> <span class="n">directions</span><span class="p">:</span>
+            <span class="n">freq</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">zeros</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">vec_i_ext</span><span class="p">))</span>
+            <span class="n">x0</span> <span class="o">=</span> <span class="kc">None</span>
+
+            <span class="k">if</span> <span class="n">direction</span> <span class="o">==</span> <span class="s2">&quot;backward&quot;</span><span class="p">:</span>
+                <span class="n">vec_i_ext</span> <span class="o">=</span> <span class="n">vec_i_ext</span><span class="p">[::</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span>
+
+            <span class="k">for</span> <span class="n">ii</span> <span class="ow">in</span> <span class="n">tqdm</span><span class="p">(</span><span class="nb">range</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">vec_i_ext</span><span class="p">)),</span> <span class="n">desc</span><span class="o">=</span><span class="n">direction</span><span class="p">):</span>
+                <span class="n">num_spikes</span> <span class="o">=</span> <span class="mi">0</span>
+                <span class="n">t_spikes</span> <span class="o">=</span> <span class="p">[]</span>
+                <span class="n">i_ext</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">i_ext</span> <span class="o">=</span> <span class="n">vec_i_ext</span><span class="p">[</span><span class="n">ii</span><span class="p">]</span>
+
+                <span class="c1"># set the last state as the initial state</span>
+                <span class="k">if</span> <span class="n">ii</span> <span class="o">&gt;</span> <span class="mi">0</span><span class="p">:</span>
+                    <span class="n">x0</span> <span class="o">=</span> <span class="p">[</span><span class="n">v</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">],</span> <span class="n">h</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">],</span> <span class="n">n</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">]]</span>
+
+                <span class="n">sol</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">simulate</span><span class="p">(</span><span class="n">tspan</span><span class="p">,</span> <span class="n">x0</span><span class="o">=</span><span class="n">x0</span><span class="p">)</span>
+                <span class="n">v</span> <span class="o">=</span> <span class="n">sol</span><span class="p">[</span><span class="s1">&#39;v&#39;</span><span class="p">]</span>
+                <span class="n">h</span> <span class="o">=</span> <span class="n">sol</span><span class="p">[</span><span class="s1">&#39;h&#39;</span><span class="p">]</span>
+                <span class="n">n</span> <span class="o">=</span> <span class="n">sol</span><span class="p">[</span><span class="s1">&#39;n&#39;</span><span class="p">]</span>
+                <span class="c1"># find steady state</span>
+                <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">num_steps</span><span class="p">):</span>
+                    <span class="k">if</span> <span class="p">((</span><span class="n">i</span> <span class="o">%</span> <span class="n">N</span><span class="p">)</span> <span class="o">==</span> <span class="mi">0</span><span class="p">)</span> <span class="ow">and</span> <span class="p">(</span><span class="n">i</span> <span class="o">&gt;</span> <span class="mi">0</span><span class="p">):</span>
+                        <span class="n">maxv</span> <span class="o">=</span> <span class="nb">max</span><span class="p">(</span><span class="n">v</span><span class="p">[</span><span class="n">i</span> <span class="o">-</span> <span class="n">N</span><span class="p">:</span><span class="n">i</span><span class="p">])</span>
+                        <span class="n">minv</span> <span class="o">=</span> <span class="nb">min</span><span class="p">(</span><span class="n">v</span><span class="p">[</span><span class="n">i</span> <span class="o">-</span> <span class="n">N</span><span class="p">:</span><span class="n">i</span><span class="p">])</span>
+                        <span class="n">maxn</span> <span class="o">=</span> <span class="nb">max</span><span class="p">(</span><span class="n">n</span><span class="p">[</span><span class="n">i</span> <span class="o">-</span> <span class="n">N</span><span class="p">:</span><span class="n">i</span><span class="p">])</span>
+                        <span class="n">minn</span> <span class="o">=</span> <span class="nb">min</span><span class="p">(</span><span class="n">n</span><span class="p">[</span><span class="n">i</span> <span class="o">-</span> <span class="n">N</span><span class="p">:</span><span class="n">i</span><span class="p">])</span>
+                        <span class="n">maxh</span> <span class="o">=</span> <span class="nb">max</span><span class="p">(</span><span class="n">h</span><span class="p">[</span><span class="n">i</span> <span class="o">-</span> <span class="n">N</span><span class="p">:</span><span class="n">i</span><span class="p">])</span>
+                        <span class="n">minh</span> <span class="o">=</span> <span class="nb">min</span><span class="p">(</span><span class="n">h</span><span class="p">[</span><span class="n">i</span> <span class="o">-</span> <span class="n">N</span><span class="p">:</span><span class="n">i</span><span class="p">])</span>
+                        <span class="k">if</span> <span class="p">(((</span><span class="n">maxv</span> <span class="o">-</span> <span class="n">minv</span><span class="p">)</span> <span class="o">&lt;</span> <span class="mf">0.0001</span> <span class="o">*</span> <span class="nb">abs</span><span class="p">(</span><span class="n">maxv</span> <span class="o">+</span> <span class="n">minv</span><span class="p">))</span> <span class="o">&amp;</span>
+                            <span class="p">((</span><span class="n">maxh</span> <span class="o">-</span> <span class="n">minh</span><span class="p">)</span> <span class="o">&lt;</span> <span class="mf">0.0001</span> <span class="o">*</span> <span class="nb">abs</span><span class="p">(</span><span class="n">maxh</span> <span class="o">+</span> <span class="n">minh</span><span class="p">))</span> <span class="o">&amp;</span>
+                                <span class="p">((</span><span class="n">maxn</span> <span class="o">-</span> <span class="n">minn</span><span class="p">)</span> <span class="o">&lt;</span> <span class="mf">0.0001</span> <span class="o">*</span> <span class="nb">abs</span><span class="p">(</span><span class="n">maxn</span> <span class="o">+</span> <span class="n">minn</span><span class="p">))):</span>
+                            <span class="n">freq</span><span class="p">[</span><span class="n">ii</span><span class="p">]</span> <span class="o">=</span> <span class="mf">0.0</span>
+                            <span class="c1"># print (&quot;I =%10.3f, f =%10.2f&quot; % (i_ext, freq[ii]))</span>
+                            <span class="k">break</span>
+
+                    <span class="c1"># spike detection</span>
+                    <span class="k">if</span> <span class="p">(</span><span class="n">i</span> <span class="o">&gt;</span> <span class="mi">0</span><span class="p">)</span> <span class="o">&amp;</span> <span class="p">(</span><span class="n">v</span><span class="p">[</span><span class="n">i</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span> <span class="o">&lt;</span> <span class="n">v_thr</span><span class="p">)</span> <span class="o">&amp;</span> <span class="p">(</span><span class="n">v</span><span class="p">[</span><span class="n">i</span><span class="p">]</span> <span class="o">&gt;=</span> <span class="n">v_thr</span><span class="p">):</span>
+                        <span class="n">num_spikes</span> <span class="o">+=</span> <span class="mi">1</span>
+                        <span class="n">tmp</span> <span class="o">=</span> <span class="p">((</span><span class="n">i</span> <span class="o">-</span> <span class="mi">1</span><span class="p">)</span> <span class="o">*</span> <span class="n">dt</span> <span class="o">*</span> <span class="p">(</span><span class="n">v</span><span class="p">[</span><span class="n">i</span> <span class="o">-</span> <span class="mi">1</span><span class="p">]</span> <span class="o">-</span> <span class="n">v_thr</span><span class="p">)</span> <span class="o">+</span>
+                               <span class="n">i</span> <span class="o">*</span> <span class="n">dt</span> <span class="o">*</span> <span class="p">(</span><span class="n">v_thr</span> <span class="o">-</span> <span class="n">v</span><span class="p">[</span><span class="n">i</span><span class="p">]))</span> <span class="o">/</span> <span class="p">(</span><span class="n">v</span><span class="p">[</span><span class="n">i</span> <span class="o">-</span> <span class="mi">1</span><span class="p">]</span> <span class="o">-</span> <span class="n">v</span><span class="p">[</span><span class="n">i</span><span class="p">])</span>
+                        <span class="n">t_spikes</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">tmp</span><span class="p">)</span>
+
+                    <span class="k">if</span> <span class="n">num_spikes</span> <span class="o">==</span> <span class="mi">4</span><span class="p">:</span>
+                        <span class="n">freq</span><span class="p">[</span><span class="n">ii</span><span class="p">]</span> <span class="o">=</span> <span class="mf">1000.0</span> <span class="o">/</span> <span class="p">(</span><span class="n">t_spikes</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span> <span class="o">-</span> <span class="n">t_spikes</span><span class="p">[</span><span class="o">-</span><span class="mi">2</span><span class="p">])</span>
+                        <span class="c1"># print (&quot;I =%10.3f, f =%10.2f&quot; % (i_ext, freq[ii]))</span>
+                        <span class="k">break</span>
+            <span class="n">data</span><span class="p">[</span><span class="n">direction</span><span class="p">]</span> <span class="o">=</span> <span class="n">freq</span>
+        <span class="k">if</span> <span class="s2">&quot;backward&quot;</span> <span class="ow">in</span> <span class="n">data</span><span class="o">.</span><span class="n">keys</span><span class="p">():</span>
+            <span class="n">data</span><span class="p">[</span><span class="s1">&#39;backward&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">data</span><span class="p">[</span><span class="s1">&#39;backward&#39;</span><span class="p">][::</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span>
+        <span class="k">return</span> <span class="n">data</span>
+
+    <span class="k">def</span> <span class="nf">plot_F_I</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">data</span><span class="p">,</span> <span class="n">ax</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&#39;&#39;&#39;</span>
+<span class="sd">        plot F-I curve</span>
+<span class="sd">        &#39;&#39;&#39;</span>
+        <span class="n">directions</span> <span class="o">=</span> <span class="nb">list</span><span class="p">(</span><span class="n">data</span><span class="o">.</span><span class="n">keys</span><span class="p">())</span>
+        <span class="n">directions</span><span class="o">.</span><span class="n">remove</span><span class="p">(</span><span class="s1">&#39;i_ext&#39;</span><span class="p">)</span>
+
+        <span class="n">ax</span> <span class="o">=</span> <span class="n">plt</span><span class="o">.</span><span class="n">gca</span><span class="p">()</span> <span class="k">if</span> <span class="n">ax</span> <span class="ow">is</span> <span class="kc">None</span> <span class="k">else</span> <span class="n">ax</span>
+        <span class="k">for</span> <span class="n">direction</span> <span class="ow">in</span> <span class="n">directions</span><span class="p">:</span>
+            <span class="n">f</span> <span class="o">=</span> <span class="n">data</span><span class="p">[</span><span class="n">direction</span><span class="p">]</span>
+            <span class="n">I</span> <span class="o">=</span> <span class="n">data</span><span class="p">[</span><span class="s1">&#39;i_ext&#39;</span><span class="p">]</span>
+            <span class="k">if</span> <span class="n">direction</span> <span class="o">==</span> <span class="s1">&#39;forward&#39;</span><span class="p">:</span>
+                <span class="n">ax</span><span class="o">.</span><span class="n">plot</span><span class="p">(</span><span class="n">I</span><span class="p">,</span> <span class="n">f</span><span class="p">,</span> <span class="s1">&#39;ro&#39;</span><span class="p">,</span> <span class="n">fillstyle</span><span class="o">=</span><span class="s2">&quot;none&quot;</span><span class="p">,</span> <span class="n">ms</span><span class="o">=</span><span class="mi">8</span><span class="p">,</span> <span class="n">label</span><span class="o">=</span><span class="s1">&#39;forward&#39;</span><span class="p">)</span>
+            <span class="k">elif</span> <span class="n">direction</span> <span class="o">==</span> <span class="s1">&#39;backward&#39;</span><span class="p">:</span>
+                <span class="n">ax</span><span class="o">.</span><span class="n">plot</span><span class="p">(</span><span class="n">I</span><span class="p">[::</span><span class="o">-</span><span class="mi">1</span><span class="p">],</span> <span class="n">f</span><span class="p">[::</span><span class="o">-</span><span class="mi">1</span><span class="p">],</span> <span class="s2">&quot;bo&quot;</span><span class="p">,</span>
+                        <span class="n">fillstyle</span><span class="o">=</span><span class="s2">&quot;none&quot;</span><span class="p">,</span> <span class="n">label</span><span class="o">=</span><span class="s1">&#39;backward&#39;</span><span class="p">)</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s2">&quot;direction must be &#39;forward&#39; or &#39;backward&#39;&quot;</span><span class="p">)</span>
+
+        <span class="n">ax</span><span class="o">.</span><span class="n">set_xlabel</span><span class="p">(</span><span class="sa">r</span><span class="s1">&#39;$I [\mu A/cm^2]$&#39;</span><span class="p">,</span> <span class="n">labelpad</span><span class="o">=</span><span class="mi">15</span><span class="p">)</span>
+        <span class="n">ax</span><span class="o">.</span><span class="n">set_ylabel</span><span class="p">(</span><span class="s1">&#39;frequency [Hz]&#39;</span><span class="p">)</span>
+        <span class="n">ax</span><span class="o">.</span><span class="n">legend</span><span class="p">()</span>
+        <span class="k">return</span> <span class="n">ax</span>
+
+
+<div class="viewcode-block" id="Erisir_Burst">
+<a class="viewcode-back" href="../../../../modules.html#mndynamics.models.py.Erisir_Base.Erisir_Burst">[docs]</a>
+<span class="k">class</span> <span class="nc">Erisir_Burst</span><span class="p">(</span><span class="n">Erisir</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&#39;&#39;&#39;</span>
+<span class="sd">    The Erisir neuron with a slow potassium current that is strengthened by firing</span>
+<span class="sd">    which turns the neuron into a burster.</span>
+
+<span class="sd">    Reference:</span>
+<span class="sd">    An introduction to modeling neuronal dynamics, Borgers, Chapter 19.</span>
+<span class="sd">    &#39;&#39;&#39;</span>
+
+    <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">par</span><span class="o">=</span><span class="p">{})</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="fm">__init__</span><span class="p">(</span><span class="n">par</span><span class="p">)</span>
+
+    <span class="k">def</span> <span class="fm">__str__</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
+        <span class="k">return</span> <span class="s2">&quot;Bursty Erisir Model&quot;</span>
+
+    <span class="k">def</span> <span class="fm">__call__</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;Bursty Erisir Model&quot;</span><span class="p">)</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_par</span>
+
+    <span class="k">def</span> <span class="nf">get_default_parameters</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+
+        <span class="n">params</span> <span class="o">=</span> <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="n">get_default_parameters</span><span class="p">()</span>
+        <span class="n">params</span><span class="o">.</span><span class="n">update</span><span class="p">({</span><span class="s1">&#39;g_k_slow&#39;</span><span class="p">:</span> <span class="mf">1.5</span><span class="p">,</span>
+                       <span class="s1">&#39;i_ext&#39;</span><span class="p">:</span> <span class="mf">7.5</span><span class="p">,</span>
+                       <span class="s2">&quot;tau_n_slow&quot;</span><span class="p">:</span> <span class="mf">100.0</span><span class="p">})</span>
+        <span class="k">return</span> <span class="n">params</span>
+
+    <span class="k">def</span> <span class="nf">set_initial_state</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+
+        <span class="n">x0</span> <span class="o">=</span> <span class="p">[</span><span class="bp">self</span><span class="o">.</span><span class="n">v0</span><span class="p">,</span>
+              <span class="bp">self</span><span class="o">.</span><span class="n">n_inf</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">v0</span><span class="p">),</span>
+              <span class="bp">self</span><span class="o">.</span><span class="n">h_inf</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">v0</span><span class="p">),</span>
+              <span class="bp">self</span><span class="o">.</span><span class="n">n_slow_inf</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">v0</span><span class="p">)</span>
+              <span class="p">]</span>
+        <span class="k">return</span> <span class="n">x0</span>
+
+    <span class="k">def</span> <span class="nf">n_slow_inf</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">v</span><span class="p">):</span>
+        <span class="k">return</span> <span class="mf">1.0</span> <span class="o">/</span> <span class="p">(</span><span class="mf">1.0</span> <span class="o">+</span> <span class="n">np</span><span class="o">.</span><span class="n">exp</span><span class="p">((</span><span class="o">-</span><span class="mf">20.0</span> <span class="o">-</span> <span class="n">v</span><span class="p">)</span> <span class="o">/</span> <span class="mf">5.0</span><span class="p">))</span>
+
+<div class="viewcode-block" id="Erisir_Burst.f_sys">
+<a class="viewcode-back" href="../../../../modules.html#mndynamics.models.py.Erisir_Base.Erisir_Burst.f_sys">[docs]</a>
+    <span class="k">def</span> <span class="nf">f_sys</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">x0</span><span class="p">,</span> <span class="n">t</span><span class="p">):</span>
+
+        <span class="n">v</span><span class="p">,</span> <span class="n">n</span><span class="p">,</span> <span class="n">h</span><span class="p">,</span> <span class="n">n_slow</span> <span class="o">=</span> <span class="n">x0</span>
+        <span class="n">m</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">alpha_m</span><span class="p">(</span><span class="n">v</span><span class="p">)</span> <span class="o">/</span> <span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">alpha_m</span><span class="p">(</span><span class="n">v</span><span class="p">)</span> <span class="o">+</span> <span class="bp">self</span><span class="o">.</span><span class="n">beta_m</span><span class="p">(</span><span class="n">v</span><span class="p">))</span>
+        <span class="n">dv</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">i_ext</span> <span class="o">-</span> \
+            <span class="bp">self</span><span class="o">.</span><span class="n">g_na</span> <span class="o">*</span> <span class="n">h</span> <span class="o">*</span> <span class="n">m</span> <span class="o">**</span> <span class="mi">3</span> <span class="o">*</span> <span class="p">(</span><span class="n">v</span> <span class="o">-</span> <span class="bp">self</span><span class="o">.</span><span class="n">v_na</span><span class="p">)</span> <span class="o">-</span> \
+            <span class="bp">self</span><span class="o">.</span><span class="n">g_k</span> <span class="o">*</span> <span class="n">n</span> <span class="o">**</span> <span class="mi">2</span> <span class="o">*</span> <span class="p">(</span><span class="n">v</span> <span class="o">-</span> <span class="bp">self</span><span class="o">.</span><span class="n">v_k</span><span class="p">)</span> <span class="o">-</span> \
+            <span class="bp">self</span><span class="o">.</span><span class="n">g_l</span> <span class="o">*</span> <span class="p">(</span><span class="n">v</span> <span class="o">-</span> <span class="bp">self</span><span class="o">.</span><span class="n">v_l</span><span class="p">)</span> <span class="o">-</span> \
+            <span class="bp">self</span><span class="o">.</span><span class="n">g_k_slow</span> <span class="o">*</span> <span class="n">n_slow</span> <span class="o">*</span> <span class="p">(</span><span class="n">v</span> <span class="o">-</span> <span class="bp">self</span><span class="o">.</span><span class="n">v_k</span><span class="p">)</span>
+        <span class="n">dn</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">alpha_n</span><span class="p">(</span><span class="n">v</span><span class="p">)</span> <span class="o">*</span> <span class="p">(</span><span class="mf">1.0</span> <span class="o">-</span> <span class="n">n</span><span class="p">)</span> <span class="o">-</span> <span class="bp">self</span><span class="o">.</span><span class="n">beta_n</span><span class="p">(</span><span class="n">v</span><span class="p">)</span> <span class="o">*</span> <span class="n">n</span>
+        <span class="n">dh</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">alpha_h</span><span class="p">(</span><span class="n">v</span><span class="p">)</span> <span class="o">*</span> <span class="p">(</span><span class="mf">1.0</span> <span class="o">-</span> <span class="n">h</span><span class="p">)</span> <span class="o">-</span> <span class="bp">self</span><span class="o">.</span><span class="n">beta_h</span><span class="p">(</span><span class="n">v</span><span class="p">)</span> <span class="o">*</span> <span class="n">h</span>
+        <span class="n">dn_slow</span> <span class="o">=</span> <span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">n_slow_inf</span><span class="p">(</span><span class="n">v</span><span class="p">)</span><span class="o">-</span><span class="n">n_slow</span><span class="p">)</span> <span class="o">/</span> <span class="bp">self</span><span class="o">.</span><span class="n">tau_n_slow</span>
+
+        <span class="k">return</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">([</span><span class="n">dv</span><span class="p">,</span> <span class="n">dn</span><span class="p">,</span> <span class="n">dh</span><span class="p">,</span> <span class="n">dn_slow</span><span class="p">])</span></div>
+
+
+    <span class="k">def</span> <span class="nf">simulate</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">tspan</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">x0</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
+
+        <span class="n">x0</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">set_initial_state</span><span class="p">()</span> <span class="k">if</span> <span class="n">x0</span> <span class="ow">is</span> <span class="kc">None</span> <span class="k">else</span> <span class="n">x0</span>
+        <span class="n">tspan</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">tspan</span> <span class="k">if</span> <span class="n">tspan</span> <span class="ow">is</span> <span class="kc">None</span> <span class="k">else</span> <span class="n">tspan</span>
+        <span class="n">sol</span> <span class="o">=</span> <span class="n">odeint</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">f_sys</span><span class="p">,</span> <span class="n">x0</span><span class="p">,</span> <span class="n">tspan</span><span class="p">)</span>
+
+        <span class="k">return</span> <span class="p">{</span><span class="s2">&quot;t&quot;</span><span class="p">:</span> <span class="n">tspan</span><span class="p">,</span>
+                <span class="s2">&quot;v&quot;</span><span class="p">:</span>    <span class="n">sol</span><span class="p">[:,</span> <span class="mi">0</span><span class="p">],</span>
+                <span class="s2">&quot;h&quot;</span><span class="p">:</span>    <span class="n">sol</span><span class="p">[:,</span> <span class="mi">1</span><span class="p">],</span>
+                <span class="s2">&quot;n&quot;</span><span class="p">:</span>    <span class="n">sol</span><span class="p">[:,</span> <span class="mi">2</span><span class="p">],</span>
+                <span class="s1">&#39;n_slow&#39;</span><span class="p">:</span> <span class="n">sol</span><span class="p">[:,</span> <span class="mi">3</span><span class="p">]</span>
+                <span class="p">}</span></div>
+
+</pre></div>
+
+            <div class="clearer"></div>
+          </div>
+        </div>
+      </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="main navigation">
+        <div class="sphinxsidebarwrapper">
+<div id="searchbox" style="display: none" role="search">
+  <h3 id="searchlabel">Quick search</h3>
+    <div class="searchformwrapper">
+    <form class="search" action="../../../../search.html" method="get">
+      <input type="text" name="q" aria-labelledby="searchlabel" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false"/>
+      <input type="submit" value="Go" />
+    </form>
+    </div>
+</div>
+<script>document.getElementById('searchbox').style.display = "block"</script>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="related" role="navigation" aria-label="related navigation">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../../../../genindex.html" title="General Index"
+             >index</a></li>
+        <li class="right" >
+          <a href="../../../../py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li class="nav-item nav-item-0"><a href="../../../../index.html">mndynamics 0.1.dev1+g8e5db4d documentation</a> &#187;</li>
+          <li class="nav-item nav-item-1"><a href="../../../index.html" >Module code</a> &#187;</li>
+        <li class="nav-item nav-item-this"><a href="">mndynamics.models.py.Erisir_Base</a></li> 
+      </ul>
+    </div>
+    <div class="footer" role="contentinfo">
+    &#169; Copyright 2023, Abolfazl Ziaeemehr.
+      Created using <a href="https://www.sphinx-doc.org/">Sphinx</a> 7.2.6.
+    </div>
+  </body>
+</html>

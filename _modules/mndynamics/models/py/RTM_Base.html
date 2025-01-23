@@ -1,0 +1,1021 @@
+<!DOCTYPE html>
+
+<html lang="en" data-content_root="../../../../">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>mndynamics.models.py.RTM_Base &#8212; mndynamics 0.1.dev1+gb658401 documentation</title>
+    <link rel="stylesheet" type="text/css" href="../../../../_static/pygments.css?v=3ee1c6c6" />
+    <link rel="stylesheet" type="text/css" href="../../../../_static/nature.css?v=279e0f84" />
+    <link rel="stylesheet" type="text/css" href="../../../../_static/graphviz.css?v=4ae1632d" />
+    <script src="../../../../_static/documentation_options.js?v=4beffc59"></script>
+    <script src="../../../../_static/doctools.js?v=9bcbadda"></script>
+    <script src="../../../../_static/sphinx_highlight.js?v=dc90522c"></script>
+    <link rel="index" title="Index" href="../../../../genindex.html" />
+    <link rel="search" title="Search" href="../../../../search.html" /> 
+  </head><body>
+    <div class="related" role="navigation" aria-label="Related">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../../../../genindex.html" title="General Index"
+             accesskey="I">index</a></li>
+        <li class="right" >
+          <a href="../../../../py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li class="nav-item nav-item-0"><a href="../../../../index.html">mndynamics 0.1.dev1+gb658401 documentation</a> &#187;</li>
+          <li class="nav-item nav-item-1"><a href="../../../index.html" accesskey="U">Module code</a> &#187;</li>
+        <li class="nav-item nav-item-this"><a href="">mndynamics.models.py.RTM_Base</a></li> 
+      </ul>
+    </div>  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body" role="main">
+            
+  <h1>Source code for mndynamics.models.py.RTM_Base</h1><div class="highlight"><pre>
+<span></span><span class="kn">import</span><span class="w"> </span><span class="nn">numpy</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">np</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">numpy</span><span class="w"> </span><span class="kn">import</span> <span class="n">exp</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">tqdm</span><span class="w"> </span><span class="kn">import</span> <span class="n">tqdm</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">matplotlib.pyplot</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">plt</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">scipy.optimize</span><span class="w"> </span><span class="kn">import</span> <span class="n">brentq</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">scipy.integrate</span><span class="w"> </span><span class="kn">import</span> <span class="n">odeint</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">mndynamics.utility</span><span class="w"> </span><span class="kn">import</span> <span class="n">is_sequence</span>
+
+
+<div class="viewcode-block" id="RTM">
+<a class="viewcode-back" href="../../../../modules.html#mndynamics.models.py.RTM_Base.RTM">[docs]</a>
+<span class="k">class</span><span class="w"> </span><span class="nc">RTM</span><span class="p">(</span><span class="nb">object</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Reduced Traub-Miles Model of a Pyramidal Neuron in Rat Hippocampus</span>
+
+<span class="sd">    &gt;&gt;&gt; par = {&#39;i_ext&#39;: 1.5, &#39;t_end&#39;: 100.0, &#39;v0&#39;: -70.0, &#39;dt&#39;: 0.01}</span>
+<span class="sd">    &gt;&gt;&gt; model = RTM(par)</span>
+<span class="sd">    &gt;&gt;&gt; sol = model.simulate()</span>
+<span class="sd">    &gt;&gt;&gt; plt.plot(sol[&#39;t&#39;], sol[&#39;v&#39;])</span>
+
+<span class="sd">    &quot;&quot;&quot;</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">par</span><span class="p">:</span> <span class="nb">dict</span> <span class="o">=</span> <span class="p">{})</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">check_parameters</span><span class="p">(</span><span class="n">par</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">set_parameters</span><span class="p">(</span><span class="n">par</span><span class="p">)</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="fm">__call__</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;Reduced Traub-Miles Model of a Pyramidal Neuron in Rat Hippocampus&quot;</span><span class="p">)</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_par</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="fm">__str__</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
+        <span class="k">return</span> <span class="s2">&quot;Reduced Traub-Miles Model of a Pyramidal Neuron in Rat Hippocampus&quot;</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="nf">set_parameters</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">par</span><span class="p">:</span> <span class="nb">dict</span> <span class="o">=</span> <span class="p">{}):</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">_par</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">get_default_parameters</span><span class="p">()</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_par</span><span class="o">.</span><span class="n">update</span><span class="p">(</span><span class="n">par</span><span class="p">)</span>
+
+        <span class="k">for</span> <span class="n">key</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">_par</span><span class="o">.</span><span class="n">keys</span><span class="p">():</span>
+            <span class="nb">setattr</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">key</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">_par</span><span class="p">[</span><span class="n">key</span><span class="p">])</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">tspan</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">arange</span><span class="p">(</span><span class="mf">0.0</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">t_end</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">dt</span><span class="p">)</span>
+
+<div class="viewcode-block" id="RTM.check_parameters">
+<a class="viewcode-back" href="../../../../modules.html#mndynamics.models.py.RTM_Base.RTM.check_parameters">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">check_parameters</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">par</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&#39;&#39;&#39;</span>
+<span class="sd">        Check if the parameters are valid</span>
+<span class="sd">        &#39;&#39;&#39;</span>
+        <span class="k">for</span> <span class="n">key</span> <span class="ow">in</span> <span class="n">par</span><span class="o">.</span><span class="n">keys</span><span class="p">():</span>
+            <span class="k">if</span> <span class="n">key</span> <span class="ow">not</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">get_default_parameters</span><span class="p">()</span><span class="o">.</span><span class="n">keys</span><span class="p">():</span>
+                <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s1">&#39;Parameter </span><span class="si">{}</span><span class="s1"> is not valid&#39;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">key</span><span class="p">))</span></div>
+
+
+    <span class="k">def</span><span class="w"> </span><span class="nf">get_default_parameters</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+
+        <span class="n">params</span> <span class="o">=</span> <span class="p">{</span>
+            <span class="s1">&#39;c&#39;</span><span class="p">:</span> <span class="mf">1.0</span><span class="p">,</span>
+            <span class="s1">&#39;g_k&#39;</span><span class="p">:</span> <span class="mf">80.0</span><span class="p">,</span>
+            <span class="s1">&#39;g_na&#39;</span><span class="p">:</span> <span class="mf">100.0</span><span class="p">,</span>
+            <span class="s1">&#39;g_l&#39;</span><span class="p">:</span> <span class="mf">0.1</span><span class="p">,</span>
+            <span class="s1">&#39;v_k&#39;</span><span class="p">:</span> <span class="o">-</span><span class="mf">100.0</span><span class="p">,</span>
+            <span class="s1">&#39;v_na&#39;</span><span class="p">:</span> <span class="mf">50.0</span><span class="p">,</span>
+            <span class="s1">&#39;v_l&#39;</span><span class="p">:</span> <span class="o">-</span><span class="mf">67.0</span><span class="p">,</span>
+            <span class="s1">&#39;v_thr&#39;</span><span class="p">:</span> <span class="o">-</span><span class="mf">20.0</span><span class="p">,</span>
+            <span class="s1">&#39;i_ext&#39;</span><span class="p">:</span> <span class="mf">1.5</span><span class="p">,</span>
+            <span class="s1">&#39;t_end&#39;</span><span class="p">:</span> <span class="mf">100.0</span><span class="p">,</span>
+            <span class="s1">&#39;v0&#39;</span><span class="p">:</span> <span class="o">-</span><span class="mf">70.0</span><span class="p">,</span>
+            <span class="s1">&#39;dt&#39;</span><span class="p">:</span> <span class="mf">0.01</span>
+        <span class="p">}</span>
+        <span class="k">return</span> <span class="n">params</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="nf">set_initial_state</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+
+        <span class="n">x0</span> <span class="o">=</span> <span class="p">[</span><span class="bp">self</span><span class="o">.</span><span class="n">v0</span><span class="p">,</span>
+              <span class="bp">self</span><span class="o">.</span><span class="n">m_inf</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">v0</span><span class="p">),</span>
+              <span class="bp">self</span><span class="o">.</span><span class="n">h_inf</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">v0</span><span class="p">),</span>
+              <span class="bp">self</span><span class="o">.</span><span class="n">n_inf</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">v0</span><span class="p">)]</span>
+        <span class="k">return</span> <span class="n">x0</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="nf">alpha_h</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">v</span><span class="p">):</span>
+        <span class="k">return</span> <span class="mf">0.128</span> <span class="o">*</span> <span class="n">exp</span><span class="p">(</span><span class="o">-</span><span class="p">(</span><span class="n">v</span> <span class="o">+</span> <span class="mf">50.0</span><span class="p">)</span> <span class="o">/</span> <span class="mf">18.0</span><span class="p">)</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="nf">alpha_m</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">v</span><span class="p">):</span>
+        <span class="k">return</span> <span class="mf">0.32</span> <span class="o">*</span> <span class="p">(</span><span class="n">v</span> <span class="o">+</span> <span class="mi">54</span><span class="p">)</span> <span class="o">/</span> <span class="p">(</span><span class="mf">1.0</span> <span class="o">-</span> <span class="n">exp</span><span class="p">(</span><span class="o">-</span><span class="p">(</span><span class="n">v</span> <span class="o">+</span> <span class="mf">54.0</span><span class="p">)</span> <span class="o">/</span> <span class="mf">4.0</span><span class="p">))</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="nf">alpha_n</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">v</span><span class="p">):</span>
+        <span class="k">return</span> <span class="mf">0.032</span> <span class="o">*</span> <span class="p">(</span><span class="n">v</span> <span class="o">+</span> <span class="mi">52</span><span class="p">)</span> <span class="o">/</span> <span class="p">(</span><span class="mf">1.0</span> <span class="o">-</span> <span class="n">exp</span><span class="p">(</span><span class="o">-</span><span class="p">(</span><span class="n">v</span> <span class="o">+</span> <span class="mf">52.0</span><span class="p">)</span> <span class="o">/</span> <span class="mf">5.0</span><span class="p">))</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="nf">beta_h</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">v</span><span class="p">):</span>
+        <span class="k">return</span> <span class="mf">4.0</span> <span class="o">/</span> <span class="p">(</span><span class="mf">1.0</span> <span class="o">+</span> <span class="n">exp</span><span class="p">(</span><span class="o">-</span><span class="p">(</span><span class="n">v</span> <span class="o">+</span> <span class="mf">27.0</span><span class="p">)</span> <span class="o">/</span> <span class="mf">5.0</span><span class="p">))</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="nf">beta_m</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">v</span><span class="p">):</span>
+        <span class="k">return</span> <span class="mf">0.28</span> <span class="o">*</span> <span class="p">(</span><span class="n">v</span> <span class="o">+</span> <span class="mf">27.0</span><span class="p">)</span> <span class="o">/</span> <span class="p">(</span><span class="n">exp</span><span class="p">((</span><span class="n">v</span> <span class="o">+</span> <span class="mf">27.0</span><span class="p">)</span> <span class="o">/</span> <span class="mf">5.0</span><span class="p">)</span> <span class="o">-</span> <span class="mf">1.0</span><span class="p">)</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="nf">beta_n</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">v</span><span class="p">):</span>
+        <span class="k">return</span> <span class="mf">0.5</span> <span class="o">*</span> <span class="n">exp</span><span class="p">(</span><span class="o">-</span><span class="p">(</span><span class="n">v</span> <span class="o">+</span> <span class="mf">57.0</span><span class="p">)</span> <span class="o">/</span> <span class="mf">40.0</span><span class="p">)</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="nf">h_inf</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">v</span><span class="p">):</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">alpha_h</span><span class="p">(</span><span class="n">v</span><span class="p">)</span> <span class="o">/</span> <span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">alpha_h</span><span class="p">(</span><span class="n">v</span><span class="p">)</span> <span class="o">+</span> <span class="bp">self</span><span class="o">.</span><span class="n">beta_h</span><span class="p">(</span><span class="n">v</span><span class="p">))</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="nf">m_inf</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">v</span><span class="p">):</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">alpha_m</span><span class="p">(</span><span class="n">v</span><span class="p">)</span> <span class="o">/</span> <span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">alpha_m</span><span class="p">(</span><span class="n">v</span><span class="p">)</span> <span class="o">+</span> <span class="bp">self</span><span class="o">.</span><span class="n">beta_m</span><span class="p">(</span><span class="n">v</span><span class="p">))</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="nf">n_inf</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">v</span><span class="p">):</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">alpha_n</span><span class="p">(</span><span class="n">v</span><span class="p">)</span> <span class="o">/</span> <span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">alpha_n</span><span class="p">(</span><span class="n">v</span><span class="p">)</span> <span class="o">+</span> <span class="bp">self</span><span class="o">.</span><span class="n">beta_n</span><span class="p">(</span><span class="n">v</span><span class="p">))</span>
+
+<div class="viewcode-block" id="RTM.f_sys">
+<a class="viewcode-back" href="../../../../modules.html#mndynamics.models.py.RTM_Base.RTM.f_sys">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">f_sys</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">x0</span><span class="p">,</span> <span class="n">t</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&#39;&#39;&#39;</span>
+<span class="sd">        define RTM Model</span>
+<span class="sd">        &#39;&#39;&#39;</span>
+        <span class="n">v</span><span class="p">,</span> <span class="n">m</span><span class="p">,</span> <span class="n">h</span><span class="p">,</span> <span class="n">n</span> <span class="o">=</span> <span class="n">x0</span>
+        <span class="n">dv</span> <span class="o">=</span> <span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">i_ext</span> <span class="o">-</span> <span class="bp">self</span><span class="o">.</span><span class="n">g_na</span> <span class="o">*</span> <span class="n">m</span><span class="o">**</span><span class="mi">3</span> <span class="o">*</span> <span class="n">h</span> <span class="o">*</span> <span class="p">(</span><span class="n">v</span> <span class="o">-</span> <span class="bp">self</span><span class="o">.</span><span class="n">v_na</span><span class="p">)</span> <span class="o">-</span>
+              <span class="bp">self</span><span class="o">.</span><span class="n">g_k</span> <span class="o">*</span> <span class="n">n</span><span class="o">**</span><span class="mi">4</span> <span class="o">*</span> <span class="p">(</span><span class="n">v</span> <span class="o">-</span> <span class="bp">self</span><span class="o">.</span><span class="n">v_k</span><span class="p">)</span> <span class="o">-</span> <span class="bp">self</span><span class="o">.</span><span class="n">g_l</span> <span class="o">*</span> <span class="p">(</span><span class="n">v</span> <span class="o">-</span> <span class="bp">self</span><span class="o">.</span><span class="n">v_l</span><span class="p">))</span> <span class="o">/</span> <span class="bp">self</span><span class="o">.</span><span class="n">c</span>
+        <span class="n">dm</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">alpha_m</span><span class="p">(</span><span class="n">v</span><span class="p">)</span> <span class="o">*</span> <span class="p">(</span><span class="mf">1.0</span> <span class="o">-</span> <span class="n">m</span><span class="p">)</span> <span class="o">-</span> <span class="bp">self</span><span class="o">.</span><span class="n">beta_m</span><span class="p">(</span><span class="n">v</span><span class="p">)</span> <span class="o">*</span> <span class="n">m</span>
+        <span class="n">dh</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">alpha_h</span><span class="p">(</span><span class="n">v</span><span class="p">)</span> <span class="o">*</span> <span class="p">(</span><span class="mf">1.0</span> <span class="o">-</span> <span class="n">h</span><span class="p">)</span> <span class="o">-</span> <span class="bp">self</span><span class="o">.</span><span class="n">beta_h</span><span class="p">(</span><span class="n">v</span><span class="p">)</span> <span class="o">*</span> <span class="n">h</span>
+        <span class="n">dn</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">alpha_n</span><span class="p">(</span><span class="n">v</span><span class="p">)</span> <span class="o">*</span> <span class="p">(</span><span class="mf">1.0</span> <span class="o">-</span> <span class="n">n</span><span class="p">)</span> <span class="o">-</span> <span class="bp">self</span><span class="o">.</span><span class="n">beta_n</span><span class="p">(</span><span class="n">v</span><span class="p">)</span> <span class="o">*</span> <span class="n">n</span>
+        <span class="k">return</span> <span class="p">[</span><span class="n">dv</span><span class="p">,</span> <span class="n">dm</span><span class="p">,</span> <span class="n">dh</span><span class="p">,</span> <span class="n">dn</span><span class="p">]</span></div>
+
+
+    <span class="k">def</span><span class="w"> </span><span class="nf">simulate</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">tspan</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">x0</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
+
+        <span class="n">x0</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">set_initial_state</span><span class="p">()</span> <span class="k">if</span> <span class="n">x0</span> <span class="ow">is</span> <span class="kc">None</span> <span class="k">else</span> <span class="n">x0</span>
+        <span class="n">tspan</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">tspan</span> <span class="k">if</span> <span class="n">tspan</span> <span class="ow">is</span> <span class="kc">None</span> <span class="k">else</span> <span class="n">tspan</span>
+        <span class="n">sol</span> <span class="o">=</span> <span class="n">odeint</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">f_sys</span><span class="p">,</span> <span class="n">x0</span><span class="p">,</span> <span class="n">tspan</span><span class="p">)</span>
+
+        <span class="k">return</span> <span class="p">{</span><span class="s2">&quot;t&quot;</span><span class="p">:</span> <span class="n">tspan</span><span class="p">,</span>
+                <span class="s2">&quot;v&quot;</span><span class="p">:</span>    <span class="n">sol</span><span class="p">[:,</span> <span class="mi">0</span><span class="p">],</span>
+                <span class="s2">&quot;m&quot;</span><span class="p">:</span>    <span class="n">sol</span><span class="p">[:,</span> <span class="mi">1</span><span class="p">],</span>
+                <span class="s2">&quot;h&quot;</span><span class="p">:</span>    <span class="n">sol</span><span class="p">[:,</span> <span class="mi">2</span><span class="p">],</span>
+                <span class="s2">&quot;n&quot;</span><span class="p">:</span>    <span class="n">sol</span><span class="p">[:,</span> <span class="mi">3</span><span class="p">]</span>
+                <span class="p">}</span></div>
+
+
+
+<div class="viewcode-block" id="RTM_M">
+<a class="viewcode-back" href="../../../../modules.html#mndynamics.models.py.RTM_Base.RTM_M">[docs]</a>
+<span class="k">class</span><span class="w"> </span><span class="nc">RTM_M</span><span class="p">(</span><span class="n">RTM</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Reduced Traub-Miles neuron model with M-current</span>
+<span class="sd">    Simulate the model with parameters given in the dictionary par:</span>
+
+<span class="sd">    &gt;&gt;&gt; par = {&#39;i_ext&#39;: 1.5, &#39;t_end&#39;: 100.0, &#39;v0&#39;: -70.0, &#39;dt&#39;: 0.01}</span>
+<span class="sd">    &gt;&gt;&gt; model = RTM_M(par)</span>
+<span class="sd">    &gt;&gt;&gt; sol = model.simulate()</span>
+<span class="sd">    &gt;&gt;&gt; plt.plot(sol[&#39;t&#39;], sol[&#39;v&#39;])</span>
+
+
+<span class="sd">    &quot;&quot;&quot;</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">par</span><span class="p">:</span> <span class="nb">dict</span> <span class="o">=</span> <span class="p">{})</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="fm">__init__</span><span class="p">(</span><span class="n">par</span><span class="p">)</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="fm">__str__</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
+        <span class="k">return</span> <span class="s2">&quot;Reduced Traub-Miles Model with M-current&quot;</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="fm">__call__</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;Reduced Traub-Miles Model with M-current&quot;</span><span class="p">)</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_par</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="nf">set_initial_state</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+
+        <span class="n">x0</span> <span class="o">=</span> <span class="p">[</span><span class="bp">self</span><span class="o">.</span><span class="n">v0</span><span class="p">,</span>
+              <span class="c1">#   self.m_inf(self.v0),</span>
+              <span class="bp">self</span><span class="o">.</span><span class="n">h_inf</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">v0</span><span class="p">),</span>
+              <span class="bp">self</span><span class="o">.</span><span class="n">n_inf</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">v0</span><span class="p">),</span>
+              <span class="mf">0.0</span><span class="p">]</span>
+        <span class="k">return</span> <span class="n">x0</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="nf">get_default_parameters</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+
+        <span class="n">params</span> <span class="o">=</span> <span class="p">{</span>
+            <span class="s1">&#39;c&#39;</span><span class="p">:</span> <span class="mf">1.0</span><span class="p">,</span>
+            <span class="s1">&#39;g_k&#39;</span><span class="p">:</span> <span class="mf">80.0</span><span class="p">,</span>
+            <span class="s1">&#39;g_na&#39;</span><span class="p">:</span> <span class="mf">100.0</span><span class="p">,</span>
+            <span class="s1">&#39;g_l&#39;</span><span class="p">:</span> <span class="mf">0.1</span><span class="p">,</span>
+            <span class="s1">&#39;g_m&#39;</span><span class="p">:</span> <span class="mf">0.25</span><span class="p">,</span>
+            <span class="s1">&#39;v_k&#39;</span><span class="p">:</span> <span class="o">-</span><span class="mf">100.0</span><span class="p">,</span>
+            <span class="s1">&#39;v_na&#39;</span><span class="p">:</span> <span class="mf">50.0</span><span class="p">,</span>
+            <span class="s1">&#39;v_l&#39;</span><span class="p">:</span> <span class="o">-</span><span class="mf">67.0</span><span class="p">,</span>
+            <span class="s1">&#39;i_ext&#39;</span><span class="p">:</span> <span class="mf">1.5</span><span class="p">,</span>
+            <span class="s1">&#39;t_end&#39;</span><span class="p">:</span> <span class="mf">100.0</span><span class="p">,</span>
+            <span class="s1">&#39;v0&#39;</span><span class="p">:</span> <span class="o">-</span><span class="mf">70.0</span><span class="p">,</span>
+            <span class="s1">&#39;dt&#39;</span><span class="p">:</span> <span class="mf">0.01</span><span class="p">,</span>
+        <span class="p">}</span>
+        <span class="k">return</span> <span class="n">params</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="nf">w_inf</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">v</span><span class="p">):</span>
+        <span class="k">return</span> <span class="mf">1.0</span><span class="o">/</span><span class="p">(</span><span class="mf">1.0</span> <span class="o">+</span> <span class="n">exp</span><span class="p">(</span><span class="o">-</span><span class="p">(</span><span class="n">v</span> <span class="o">+</span> <span class="mf">35.0</span><span class="p">)</span><span class="o">/</span><span class="mf">10.0</span><span class="p">))</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="nf">tau_w</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">v</span><span class="p">):</span>
+        <span class="k">return</span> <span class="mf">400.0</span><span class="o">/</span><span class="p">(</span><span class="mf">3.3</span><span class="o">*</span><span class="n">exp</span><span class="p">((</span><span class="n">v</span><span class="o">+</span><span class="mi">35</span><span class="p">)</span><span class="o">/</span><span class="mi">20</span><span class="p">)</span><span class="o">+</span><span class="n">exp</span><span class="p">(</span><span class="o">-</span><span class="p">(</span><span class="n">v</span><span class="o">+</span><span class="mi">35</span><span class="p">)</span><span class="o">/</span><span class="mi">20</span><span class="p">))</span>
+
+<div class="viewcode-block" id="RTM_M.f_sys">
+<a class="viewcode-back" href="../../../../modules.html#mndynamics.models.py.RTM_Base.RTM_M.f_sys">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">f_sys</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">x0</span><span class="p">,</span> <span class="n">t</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&#39;&#39;&#39;</span>
+<span class="sd">        define RTM Model with M-current</span>
+<span class="sd">        &#39;&#39;&#39;</span>
+        <span class="n">v</span><span class="p">,</span> <span class="n">h</span><span class="p">,</span> <span class="n">n</span><span class="p">,</span> <span class="n">w</span> <span class="o">=</span> <span class="n">x0</span>
+        <span class="n">dv</span> <span class="o">=</span> <span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">i_ext</span> <span class="o">-</span>
+              <span class="bp">self</span><span class="o">.</span><span class="n">g_na</span> <span class="o">*</span> <span class="bp">self</span><span class="o">.</span><span class="n">m_inf</span><span class="p">(</span><span class="n">v</span><span class="p">)</span><span class="o">**</span><span class="mi">3</span> <span class="o">*</span> <span class="n">h</span> <span class="o">*</span> <span class="p">(</span><span class="n">v</span> <span class="o">-</span> <span class="bp">self</span><span class="o">.</span><span class="n">v_na</span><span class="p">)</span> <span class="o">-</span>
+              <span class="bp">self</span><span class="o">.</span><span class="n">g_k</span> <span class="o">*</span> <span class="n">n</span><span class="o">**</span><span class="mi">4</span> <span class="o">*</span> <span class="p">(</span><span class="n">v</span> <span class="o">-</span> <span class="bp">self</span><span class="o">.</span><span class="n">v_k</span><span class="p">)</span> <span class="o">-</span>
+              <span class="bp">self</span><span class="o">.</span><span class="n">g_m</span> <span class="o">*</span> <span class="n">w</span> <span class="o">*</span> <span class="p">(</span><span class="n">v</span> <span class="o">-</span> <span class="bp">self</span><span class="o">.</span><span class="n">v_k</span><span class="p">)</span> <span class="o">-</span>
+              <span class="bp">self</span><span class="o">.</span><span class="n">g_l</span> <span class="o">*</span> <span class="p">(</span><span class="n">v</span> <span class="o">-</span> <span class="bp">self</span><span class="o">.</span><span class="n">v_l</span><span class="p">))</span> <span class="o">/</span> <span class="bp">self</span><span class="o">.</span><span class="n">c</span>
+        <span class="n">dh</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">alpha_h</span><span class="p">(</span><span class="n">v</span><span class="p">)</span> <span class="o">*</span> <span class="p">(</span><span class="mf">1.0</span> <span class="o">-</span> <span class="n">h</span><span class="p">)</span> <span class="o">-</span> <span class="bp">self</span><span class="o">.</span><span class="n">beta_h</span><span class="p">(</span><span class="n">v</span><span class="p">)</span> <span class="o">*</span> <span class="n">h</span>
+        <span class="n">dn</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">alpha_n</span><span class="p">(</span><span class="n">v</span><span class="p">)</span> <span class="o">*</span> <span class="p">(</span><span class="mf">1.0</span> <span class="o">-</span> <span class="n">n</span><span class="p">)</span> <span class="o">-</span> <span class="bp">self</span><span class="o">.</span><span class="n">beta_n</span><span class="p">(</span><span class="n">v</span><span class="p">)</span> <span class="o">*</span> <span class="n">n</span>
+        <span class="n">dw</span> <span class="o">=</span> <span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">w_inf</span><span class="p">(</span><span class="n">v</span><span class="p">)</span> <span class="o">-</span> <span class="n">w</span><span class="p">)</span> <span class="o">/</span> <span class="bp">self</span><span class="o">.</span><span class="n">tau_w</span><span class="p">(</span><span class="n">v</span><span class="p">)</span>
+        <span class="k">return</span> <span class="p">[</span><span class="n">dv</span><span class="p">,</span> <span class="n">dh</span><span class="p">,</span> <span class="n">dn</span><span class="p">,</span> <span class="n">dw</span><span class="p">]</span></div>
+
+
+<div class="viewcode-block" id="RTM_M.simulate">
+<a class="viewcode-back" href="../../../../modules.html#mndynamics.models.py.RTM_Base.RTM_M.simulate">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">simulate</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">tspan</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">x0</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        simulate the model</span>
+
+<span class="sd">        Parameters</span>
+<span class="sd">        ----------</span>
+<span class="sd">        tspan : array_like</span>
+<span class="sd">            time span</span>
+<span class="sd">        x0 : array_like</span>
+<span class="sd">            initial state</span>
+
+<span class="sd">        Returns</span>
+<span class="sd">        -------</span>
+<span class="sd">        dict : </span>
+<span class="sd">            time series of membrane potential (v), activation variables </span>
+<span class="sd">            m, h, n and w</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+
+        <span class="n">x0</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">set_initial_state</span><span class="p">()</span> <span class="k">if</span> <span class="n">x0</span> <span class="ow">is</span> <span class="kc">None</span> <span class="k">else</span> <span class="n">x0</span>
+        <span class="n">tspan</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">tspan</span> <span class="k">if</span> <span class="n">tspan</span> <span class="ow">is</span> <span class="kc">None</span> <span class="k">else</span> <span class="n">tspan</span>
+        <span class="n">sol</span> <span class="o">=</span> <span class="n">odeint</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">f_sys</span><span class="p">,</span> <span class="n">x0</span><span class="p">,</span> <span class="n">tspan</span><span class="p">)</span>
+
+        <span class="k">return</span> <span class="p">{</span><span class="s2">&quot;t&quot;</span><span class="p">:</span> <span class="n">tspan</span><span class="p">,</span>
+                <span class="s2">&quot;v&quot;</span><span class="p">:</span>    <span class="n">sol</span><span class="p">[:,</span> <span class="mi">0</span><span class="p">],</span>
+                <span class="s2">&quot;m&quot;</span><span class="p">:</span>    <span class="bp">self</span><span class="o">.</span><span class="n">m_inf</span><span class="p">(</span><span class="n">sol</span><span class="p">[:,</span> <span class="mi">0</span><span class="p">]),</span>
+                <span class="s2">&quot;h&quot;</span><span class="p">:</span>    <span class="n">sol</span><span class="p">[:,</span> <span class="mi">1</span><span class="p">],</span>
+                <span class="s2">&quot;n&quot;</span><span class="p">:</span>    <span class="n">sol</span><span class="p">[:,</span> <span class="mi">2</span><span class="p">],</span>
+                <span class="s2">&quot;w&quot;</span><span class="p">:</span>    <span class="n">sol</span><span class="p">[:,</span> <span class="mi">3</span><span class="p">]</span>
+                <span class="p">}</span></div>
+</div>
+
+
+
+<div class="viewcode-block" id="RTM_AHP">
+<a class="viewcode-back" href="../../../../modules.html#mndynamics.models.py.RTM_Base.RTM_AHP">[docs]</a>
+<span class="k">class</span><span class="w"> </span><span class="nc">RTM_AHP</span><span class="p">(</span><span class="n">RTM</span><span class="p">):</span>
+    <span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">par</span><span class="p">:</span> <span class="nb">dict</span> <span class="o">=</span> <span class="p">{})</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="fm">__init__</span><span class="p">(</span><span class="n">par</span><span class="p">)</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="fm">__str__</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
+        <span class="k">return</span> <span class="s2">&quot;Reduced Traub-Miles Model with AHP-current&quot;</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="fm">__call__</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;Reduced Traub-Miles Model with AHP-current&quot;</span><span class="p">)</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_par</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="nf">set_initial_state</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+
+        <span class="n">x0</span> <span class="o">=</span> <span class="p">[</span><span class="bp">self</span><span class="o">.</span><span class="n">v0</span><span class="p">,</span>
+              <span class="bp">self</span><span class="o">.</span><span class="n">h_inf</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">v0</span><span class="p">),</span>
+              <span class="bp">self</span><span class="o">.</span><span class="n">n_inf</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">v0</span><span class="p">),</span>
+              <span class="mf">0.0</span><span class="p">]</span>
+        <span class="k">return</span> <span class="n">x0</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="nf">get_default_parameters</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+
+        <span class="n">params</span> <span class="o">=</span> <span class="p">{</span>
+            <span class="s1">&#39;c&#39;</span><span class="p">:</span> <span class="mf">1.0</span><span class="p">,</span>
+            <span class="s1">&#39;g_k&#39;</span><span class="p">:</span> <span class="mf">80.0</span><span class="p">,</span>
+            <span class="s1">&#39;g_na&#39;</span><span class="p">:</span> <span class="mf">100.0</span><span class="p">,</span>
+            <span class="s1">&#39;g_l&#39;</span><span class="p">:</span> <span class="mf">0.1</span><span class="p">,</span>
+            <span class="s1">&#39;g_ahp&#39;</span><span class="p">:</span> <span class="mf">0.25</span><span class="p">,</span>
+            <span class="s1">&#39;v_k&#39;</span><span class="p">:</span> <span class="o">-</span><span class="mf">100.0</span><span class="p">,</span>
+            <span class="s1">&#39;v_na&#39;</span><span class="p">:</span> <span class="mf">50.0</span><span class="p">,</span>
+            <span class="s1">&#39;v_l&#39;</span><span class="p">:</span> <span class="o">-</span><span class="mf">67.0</span><span class="p">,</span>
+            <span class="s1">&#39;i_ext&#39;</span><span class="p">:</span> <span class="mf">1.5</span><span class="p">,</span>
+            <span class="s1">&#39;t_end&#39;</span><span class="p">:</span> <span class="mf">100.0</span><span class="p">,</span>
+            <span class="s1">&#39;v0&#39;</span><span class="p">:</span> <span class="o">-</span><span class="mf">70.0</span><span class="p">,</span>
+            <span class="s1">&#39;dt&#39;</span><span class="p">:</span> <span class="mf">0.01</span><span class="p">,</span>
+        <span class="p">}</span>
+        <span class="k">return</span> <span class="n">params</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="nf">ca_inf</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">v</span><span class="p">):</span>
+        <span class="k">return</span> <span class="p">(</span><span class="mi">120</span><span class="o">-</span><span class="n">v</span><span class="p">)</span><span class="o">/</span><span class="p">(</span><span class="mi">1</span><span class="o">+</span><span class="n">exp</span><span class="p">(</span><span class="o">-</span><span class="p">(</span><span class="n">v</span><span class="o">+</span><span class="mi">15</span><span class="p">)</span><span class="o">/</span><span class="mi">5</span><span class="p">))</span><span class="o">*</span><span class="mi">4</span><span class="o">/</span><span class="mi">25</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="nf">tau_w</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">v</span><span class="p">):</span>
+        <span class="k">return</span> <span class="mf">400.0</span><span class="o">/</span><span class="p">(</span><span class="mf">3.3</span><span class="o">*</span><span class="n">exp</span><span class="p">((</span><span class="n">v</span><span class="o">+</span><span class="mi">35</span><span class="p">)</span><span class="o">/</span><span class="mi">20</span><span class="p">)</span><span class="o">+</span><span class="n">exp</span><span class="p">(</span><span class="o">-</span><span class="p">(</span><span class="n">v</span><span class="o">+</span><span class="mi">35</span><span class="p">)</span><span class="o">/</span><span class="mi">20</span><span class="p">))</span>
+
+<div class="viewcode-block" id="RTM_AHP.f_sys">
+<a class="viewcode-back" href="../../../../modules.html#mndynamics.models.py.RTM_Base.RTM_AHP.f_sys">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">f_sys</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">x0</span><span class="p">,</span> <span class="n">t</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&#39;&#39;&#39;</span>
+<span class="sd">        define RTM Model with AHP-current</span>
+<span class="sd">        &#39;&#39;&#39;</span>
+        <span class="n">v</span><span class="p">,</span> <span class="n">h</span><span class="p">,</span> <span class="n">n</span><span class="p">,</span> <span class="n">ca</span> <span class="o">=</span> <span class="n">x0</span>
+        <span class="n">dv</span> <span class="o">=</span> <span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">i_ext</span> <span class="o">-</span>
+              <span class="bp">self</span><span class="o">.</span><span class="n">g_na</span> <span class="o">*</span> <span class="bp">self</span><span class="o">.</span><span class="n">m_inf</span><span class="p">(</span><span class="n">v</span><span class="p">)</span><span class="o">**</span><span class="mi">3</span> <span class="o">*</span> <span class="n">h</span> <span class="o">*</span> <span class="p">(</span><span class="n">v</span> <span class="o">-</span> <span class="bp">self</span><span class="o">.</span><span class="n">v_na</span><span class="p">)</span> <span class="o">-</span>
+              <span class="bp">self</span><span class="o">.</span><span class="n">g_k</span> <span class="o">*</span> <span class="n">n</span><span class="o">**</span><span class="mi">4</span> <span class="o">*</span> <span class="p">(</span><span class="n">v</span> <span class="o">-</span> <span class="bp">self</span><span class="o">.</span><span class="n">v_k</span><span class="p">)</span> <span class="o">-</span>
+              <span class="bp">self</span><span class="o">.</span><span class="n">g_ahp</span> <span class="o">*</span> <span class="n">ca</span> <span class="o">*</span> <span class="p">(</span><span class="n">v</span> <span class="o">-</span> <span class="bp">self</span><span class="o">.</span><span class="n">v_k</span><span class="p">)</span> <span class="o">-</span>
+              <span class="bp">self</span><span class="o">.</span><span class="n">g_l</span> <span class="o">*</span> <span class="p">(</span><span class="n">v</span> <span class="o">-</span> <span class="bp">self</span><span class="o">.</span><span class="n">v_l</span><span class="p">))</span> <span class="o">/</span> <span class="bp">self</span><span class="o">.</span><span class="n">c</span>
+        <span class="n">dh</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">alpha_h</span><span class="p">(</span><span class="n">v</span><span class="p">)</span> <span class="o">*</span> <span class="p">(</span><span class="mf">1.0</span> <span class="o">-</span> <span class="n">h</span><span class="p">)</span> <span class="o">-</span> <span class="bp">self</span><span class="o">.</span><span class="n">beta_h</span><span class="p">(</span><span class="n">v</span><span class="p">)</span> <span class="o">*</span> <span class="n">h</span>
+        <span class="n">dn</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">alpha_n</span><span class="p">(</span><span class="n">v</span><span class="p">)</span> <span class="o">*</span> <span class="p">(</span><span class="mf">1.0</span> <span class="o">-</span> <span class="n">n</span><span class="p">)</span> <span class="o">-</span> <span class="bp">self</span><span class="o">.</span><span class="n">beta_n</span><span class="p">(</span><span class="n">v</span><span class="p">)</span> <span class="o">*</span> <span class="n">n</span>
+        <span class="n">dca</span> <span class="o">=</span> <span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">ca_inf</span><span class="p">(</span><span class="n">v</span><span class="p">)</span> <span class="o">-</span> <span class="n">ca</span><span class="p">)</span> <span class="o">/</span> <span class="mf">80.0</span>
+
+        <span class="k">return</span> <span class="p">[</span><span class="n">dv</span><span class="p">,</span> <span class="n">dh</span><span class="p">,</span> <span class="n">dn</span><span class="p">,</span> <span class="n">dca</span><span class="p">]</span></div>
+
+
+    <span class="k">def</span><span class="w"> </span><span class="nf">simulate</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">tspan</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">x0</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
+
+        <span class="n">x0</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">set_initial_state</span><span class="p">()</span> <span class="k">if</span> <span class="n">x0</span> <span class="ow">is</span> <span class="kc">None</span> <span class="k">else</span> <span class="n">x0</span>
+        <span class="n">tspan</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">tspan</span> <span class="k">if</span> <span class="n">tspan</span> <span class="ow">is</span> <span class="kc">None</span> <span class="k">else</span> <span class="n">tspan</span>
+        <span class="n">sol</span> <span class="o">=</span> <span class="n">odeint</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">f_sys</span><span class="p">,</span> <span class="n">x0</span><span class="p">,</span> <span class="n">tspan</span><span class="p">)</span>
+
+        <span class="k">return</span> <span class="p">{</span><span class="s2">&quot;t&quot;</span><span class="p">:</span> <span class="n">tspan</span><span class="p">,</span>
+                <span class="s2">&quot;v&quot;</span><span class="p">:</span>    <span class="n">sol</span><span class="p">[:,</span> <span class="mi">0</span><span class="p">],</span>
+                <span class="s2">&quot;m&quot;</span><span class="p">:</span>    <span class="bp">self</span><span class="o">.</span><span class="n">m_inf</span><span class="p">(</span><span class="n">sol</span><span class="p">[:,</span> <span class="mi">0</span><span class="p">]),</span>
+                <span class="s2">&quot;h&quot;</span><span class="p">:</span>    <span class="n">sol</span><span class="p">[:,</span> <span class="mi">1</span><span class="p">],</span>
+                <span class="s2">&quot;n&quot;</span><span class="p">:</span>    <span class="n">sol</span><span class="p">[:,</span> <span class="mi">2</span><span class="p">],</span>
+                <span class="s2">&quot;ca&quot;</span><span class="p">:</span>    <span class="n">sol</span><span class="p">[:,</span> <span class="mi">3</span><span class="p">]</span>
+                <span class="p">}</span></div>
+
+
+
+<div class="viewcode-block" id="RTM_2D">
+<a class="viewcode-back" href="../../../../modules.html#mndynamics.models.py.RTM_Base.RTM_2D">[docs]</a>
+<span class="k">class</span><span class="w"> </span><span class="nc">RTM_2D</span><span class="p">(</span><span class="n">RTM</span><span class="p">):</span>
+
+<span class="w">    </span><span class="sd">&#39;&#39;&#39;</span>
+<span class="sd">    Reduced 2-dimensional Traub-Miles Model of a Pyramidal Neuron in Rat Hippocampus</span>
+<span class="sd">    as defined in Eq. 12.1-2 in [1]</span>
+
+<span class="sd">    References:</span>
+<span class="sd">    [1] Börgers, C., 2017. An introduction to modeling neuronal dynamics (Vol. 66). Berlin: Springer.</span>
+<span class="sd">    &#39;&#39;&#39;</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">par</span><span class="p">:</span> <span class="nb">dict</span> <span class="o">=</span> <span class="p">{})</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">check_parameters</span><span class="p">(</span><span class="n">par</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">set_parameters</span><span class="p">(</span><span class="n">par</span><span class="p">)</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="fm">__call__</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;Reduced 2-dimensional Traub-Miles Model of a Pyramidal Neuron in Rat Hippocampus&quot;</span><span class="p">)</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_par</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="fm">__str__</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
+        <span class="k">return</span> <span class="s2">&quot;Reduced 2-dimensional Traub-Miles Model of a Pyramidal Neuron in Rat Hippocampus&quot;</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="nf">set_parameters</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">par</span><span class="p">:</span> <span class="nb">dict</span> <span class="o">=</span> <span class="p">{}):</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">_par</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">get_default_parameters</span><span class="p">()</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_par</span><span class="o">.</span><span class="n">update</span><span class="p">(</span><span class="n">par</span><span class="p">)</span>
+
+        <span class="k">for</span> <span class="n">key</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">_par</span><span class="o">.</span><span class="n">keys</span><span class="p">():</span>
+            <span class="nb">setattr</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">key</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">_par</span><span class="p">[</span><span class="n">key</span><span class="p">])</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">tspan</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">arange</span><span class="p">(</span><span class="mf">0.0</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">t_end</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">dt</span><span class="p">)</span>
+
+<div class="viewcode-block" id="RTM_2D.check_parameters">
+<a class="viewcode-back" href="../../../../modules.html#mndynamics.models.py.RTM_Base.RTM_2D.check_parameters">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">check_parameters</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">par</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&#39;&#39;&#39;</span>
+<span class="sd">        Check if the parameters are valid</span>
+<span class="sd">        &#39;&#39;&#39;</span>
+        <span class="k">for</span> <span class="n">key</span> <span class="ow">in</span> <span class="n">par</span><span class="o">.</span><span class="n">keys</span><span class="p">():</span>
+            <span class="k">if</span> <span class="n">key</span> <span class="ow">not</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">get_default_parameters</span><span class="p">()</span><span class="o">.</span><span class="n">keys</span><span class="p">():</span>
+                <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s1">&#39;Parameter </span><span class="si">{}</span><span class="s1"> is not valid&#39;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">key</span><span class="p">))</span></div>
+
+
+    <span class="k">def</span><span class="w"> </span><span class="nf">get_default_parameters</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+
+        <span class="n">params</span> <span class="o">=</span> <span class="p">{</span>
+            <span class="s1">&#39;c&#39;</span><span class="p">:</span> <span class="mf">1.0</span><span class="p">,</span>
+            <span class="s1">&#39;g_k&#39;</span><span class="p">:</span> <span class="mf">80.0</span><span class="p">,</span>
+            <span class="s1">&#39;g_na&#39;</span><span class="p">:</span> <span class="mf">100.0</span><span class="p">,</span>
+            <span class="s1">&#39;g_l&#39;</span><span class="p">:</span> <span class="mf">0.1</span><span class="p">,</span>
+            <span class="s1">&#39;v_k&#39;</span><span class="p">:</span> <span class="o">-</span><span class="mf">100.0</span><span class="p">,</span>
+            <span class="s1">&#39;v_na&#39;</span><span class="p">:</span> <span class="mf">50.0</span><span class="p">,</span>
+            <span class="s1">&#39;v_l&#39;</span><span class="p">:</span> <span class="o">-</span><span class="mf">67.0</span><span class="p">,</span>
+            <span class="s1">&#39;i_ext&#39;</span><span class="p">:</span> <span class="mf">1.5</span><span class="p">,</span>
+            <span class="s1">&#39;t_end&#39;</span><span class="p">:</span> <span class="mf">100.0</span><span class="p">,</span>
+            <span class="s1">&#39;v0&#39;</span><span class="p">:</span> <span class="o">-</span><span class="mf">70.0</span><span class="p">,</span>
+            <span class="s1">&#39;dt&#39;</span><span class="p">:</span> <span class="mf">0.01</span>
+        <span class="p">}</span>
+        <span class="k">return</span> <span class="n">params</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="nf">set_initial_state</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+
+        <span class="n">x0</span> <span class="o">=</span> <span class="p">[</span><span class="bp">self</span><span class="o">.</span><span class="n">v0</span><span class="p">,</span>
+              <span class="bp">self</span><span class="o">.</span><span class="n">n_inf</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">v0</span><span class="p">)]</span>
+        <span class="k">return</span> <span class="n">x0</span>
+
+<div class="viewcode-block" id="RTM_2D.f_sys">
+<a class="viewcode-back" href="../../../../modules.html#mndynamics.models.py.RTM_Base.RTM_2D.f_sys">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">f_sys</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">x0</span><span class="p">,</span> <span class="n">t</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&#39;&#39;&#39;</span>
+<span class="sd">        define Reduced 2D RTM Model</span>
+<span class="sd">        &#39;&#39;&#39;</span>
+        <span class="n">v</span><span class="p">,</span> <span class="n">n</span> <span class="o">=</span> <span class="n">x0</span>
+        <span class="n">m_inf</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">m_inf</span><span class="p">(</span><span class="n">v</span><span class="p">)</span>
+        <span class="n">h</span> <span class="o">=</span> <span class="mf">1.0</span> <span class="o">-</span> <span class="n">n</span>
+
+        <span class="n">dv</span> <span class="o">=</span> <span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">i_ext</span> <span class="o">-</span> <span class="bp">self</span><span class="o">.</span><span class="n">g_na</span> <span class="o">*</span> <span class="n">m_inf</span><span class="o">**</span><span class="mi">3</span> <span class="o">*</span> <span class="n">h</span> <span class="o">*</span> <span class="p">(</span><span class="n">v</span> <span class="o">-</span> <span class="bp">self</span><span class="o">.</span><span class="n">v_na</span><span class="p">)</span> <span class="o">-</span>
+              <span class="bp">self</span><span class="o">.</span><span class="n">g_k</span> <span class="o">*</span> <span class="n">n</span><span class="o">**</span><span class="mi">4</span> <span class="o">*</span> <span class="p">(</span><span class="n">v</span> <span class="o">-</span> <span class="bp">self</span><span class="o">.</span><span class="n">v_k</span><span class="p">)</span> <span class="o">-</span> <span class="bp">self</span><span class="o">.</span><span class="n">g_l</span> <span class="o">*</span> <span class="p">(</span><span class="n">v</span> <span class="o">-</span> <span class="bp">self</span><span class="o">.</span><span class="n">v_l</span><span class="p">))</span> <span class="o">/</span> <span class="bp">self</span><span class="o">.</span><span class="n">c</span>
+
+        <span class="n">dn</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">alpha_n</span><span class="p">(</span><span class="n">v</span><span class="p">)</span> <span class="o">*</span> <span class="p">(</span><span class="mf">1.0</span> <span class="o">-</span> <span class="n">n</span><span class="p">)</span> <span class="o">-</span> <span class="bp">self</span><span class="o">.</span><span class="n">beta_n</span><span class="p">(</span><span class="n">v</span><span class="p">)</span> <span class="o">*</span> <span class="n">n</span>
+        <span class="k">return</span> <span class="n">np</span><span class="o">.</span><span class="n">asarray</span><span class="p">([</span><span class="n">dv</span><span class="p">,</span> <span class="n">dn</span><span class="p">])</span></div>
+
+
+    <span class="k">def</span><span class="w"> </span><span class="nf">n_inf_p</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">v</span><span class="p">):</span>
+        <span class="n">n_inf_p</span> <span class="o">=</span> <span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">alpha_n</span><span class="p">(</span><span class="n">v</span><span class="p">)</span><span class="o">+</span><span class="bp">self</span><span class="o">.</span><span class="n">beta_n</span><span class="p">(</span><span class="n">v</span><span class="p">))</span><span class="o">*</span><span class="bp">self</span><span class="o">.</span><span class="n">alpha_n_p</span><span class="p">(</span><span class="n">v</span><span class="p">)</span>
+        <span class="n">n_inf_p</span> <span class="o">=</span> <span class="n">n_inf_p</span><span class="o">-</span><span class="bp">self</span><span class="o">.</span><span class="n">alpha_n</span><span class="p">(</span><span class="n">v</span><span class="p">)</span><span class="o">*</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">alpha_n_p</span><span class="p">(</span><span class="n">v</span><span class="p">)</span><span class="o">+</span><span class="bp">self</span><span class="o">.</span><span class="n">beta_n_p</span><span class="p">(</span><span class="n">v</span><span class="p">))</span>
+        <span class="n">n_inf_p</span> <span class="o">=</span> <span class="n">n_inf_p</span><span class="o">/</span><span class="p">((</span><span class="bp">self</span><span class="o">.</span><span class="n">alpha_n</span><span class="p">(</span><span class="n">v</span><span class="p">)</span><span class="o">+</span><span class="bp">self</span><span class="o">.</span><span class="n">beta_n</span><span class="p">(</span><span class="n">v</span><span class="p">)))</span><span class="o">**</span><span class="mi">2</span>
+        <span class="k">return</span> <span class="n">n_inf_p</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="nf">m_inf_p</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">v</span><span class="p">):</span>
+        <span class="n">m_inf_p</span> <span class="o">=</span> <span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">alpha_m</span><span class="p">(</span><span class="n">v</span><span class="p">)</span><span class="o">+</span><span class="bp">self</span><span class="o">.</span><span class="n">beta_m</span><span class="p">(</span><span class="n">v</span><span class="p">))</span><span class="o">*</span><span class="bp">self</span><span class="o">.</span><span class="n">alpha_m_p</span><span class="p">(</span><span class="n">v</span><span class="p">)</span>
+        <span class="n">m_inf_p</span> <span class="o">=</span> <span class="n">m_inf_p</span><span class="o">-</span><span class="bp">self</span><span class="o">.</span><span class="n">alpha_m</span><span class="p">(</span><span class="n">v</span><span class="p">)</span><span class="o">*</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">alpha_m_p</span><span class="p">(</span><span class="n">v</span><span class="p">)</span><span class="o">+</span><span class="bp">self</span><span class="o">.</span><span class="n">beta_m_p</span><span class="p">(</span><span class="n">v</span><span class="p">))</span>
+        <span class="n">m_inf_p</span> <span class="o">=</span> <span class="n">m_inf_p</span><span class="o">/</span><span class="p">((</span><span class="bp">self</span><span class="o">.</span><span class="n">alpha_m</span><span class="p">(</span><span class="n">v</span><span class="p">)</span><span class="o">+</span><span class="bp">self</span><span class="o">.</span><span class="n">beta_m</span><span class="p">(</span><span class="n">v</span><span class="p">)))</span><span class="o">**</span><span class="mi">2</span>
+        <span class="k">return</span> <span class="n">m_inf_p</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="nf">beta_n_p</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">v</span><span class="p">):</span>
+        <span class="n">beta_n</span> <span class="o">=</span> <span class="mf">0.5</span><span class="o">*</span><span class="n">exp</span><span class="p">(</span><span class="o">-</span><span class="p">(</span><span class="n">v</span><span class="o">+</span><span class="mi">57</span><span class="p">)</span><span class="o">/</span><span class="mi">40</span><span class="p">)</span>
+        <span class="n">beta_n_p</span> <span class="o">=</span> <span class="o">-</span><span class="n">beta_n</span><span class="o">/</span><span class="mi">40</span>
+        <span class="k">return</span> <span class="n">beta_n_p</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="nf">beta_m_p</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">v</span><span class="p">):</span>
+        <span class="n">num</span> <span class="o">=</span> <span class="mf">0.28</span><span class="o">*</span><span class="p">(</span><span class="n">v</span><span class="o">+</span><span class="mi">27</span><span class="p">)</span>
+        <span class="n">den</span> <span class="o">=</span> <span class="n">exp</span><span class="p">((</span><span class="n">v</span><span class="o">+</span><span class="mi">27</span><span class="p">)</span><span class="o">/</span><span class="mi">5</span><span class="p">)</span><span class="o">-</span><span class="mi">1</span>
+        <span class="n">num_p</span> <span class="o">=</span> <span class="mf">0.28</span>
+        <span class="n">den_p</span> <span class="o">=</span> <span class="n">exp</span><span class="p">((</span><span class="n">v</span><span class="o">+</span><span class="mi">27</span><span class="p">)</span><span class="o">/</span><span class="mi">5</span><span class="p">)</span><span class="o">/</span><span class="mi">5</span>
+        <span class="n">beta_m_p</span> <span class="o">=</span> <span class="p">(</span><span class="n">den</span><span class="o">*</span><span class="n">num_p</span><span class="o">-</span><span class="n">num</span><span class="o">*</span><span class="n">den_p</span><span class="p">)</span><span class="o">/</span><span class="p">(</span><span class="n">den</span><span class="o">**</span><span class="mi">2</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">beta_m_p</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="nf">alpha_n_p</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">v</span><span class="p">):</span>
+        <span class="n">num</span> <span class="o">=</span> <span class="mf">0.032</span><span class="o">*</span><span class="p">(</span><span class="n">v</span><span class="o">+</span><span class="mi">52</span><span class="p">)</span>
+        <span class="n">den</span> <span class="o">=</span> <span class="mi">1</span><span class="o">-</span><span class="n">exp</span><span class="p">(</span><span class="o">-</span><span class="p">(</span><span class="n">v</span><span class="o">+</span><span class="mi">52</span><span class="p">)</span><span class="o">/</span><span class="mi">5</span><span class="p">)</span>
+        <span class="n">num_p</span> <span class="o">=</span> <span class="mf">0.032</span>
+        <span class="n">den_p</span> <span class="o">=</span> <span class="n">exp</span><span class="p">(</span><span class="o">-</span><span class="p">(</span><span class="n">v</span><span class="o">+</span><span class="mi">52</span><span class="p">)</span><span class="o">/</span><span class="mi">5</span><span class="p">)</span><span class="o">/</span><span class="mi">5</span>
+        <span class="n">alpha_n_p</span> <span class="o">=</span> <span class="p">(</span><span class="n">den</span><span class="o">*</span><span class="n">num_p</span><span class="o">-</span><span class="n">num</span><span class="o">*</span><span class="n">den_p</span><span class="p">)</span><span class="o">/</span><span class="p">(</span><span class="n">den</span><span class="o">**</span><span class="mi">2</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">alpha_n_p</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="nf">alpha_m_p</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">v</span><span class="p">):</span>
+        <span class="n">num</span> <span class="o">=</span> <span class="mf">0.32</span><span class="o">*</span><span class="p">(</span><span class="n">v</span><span class="o">+</span><span class="mi">54</span><span class="p">)</span>
+        <span class="n">den</span> <span class="o">=</span> <span class="mi">1</span><span class="o">-</span><span class="n">exp</span><span class="p">(</span><span class="o">-</span><span class="p">(</span><span class="n">v</span><span class="o">+</span><span class="mi">54</span><span class="p">)</span><span class="o">/</span><span class="mi">4</span><span class="p">)</span>
+        <span class="n">num_p</span> <span class="o">=</span> <span class="mf">0.32</span>
+        <span class="n">den_p</span> <span class="o">=</span> <span class="n">exp</span><span class="p">(</span><span class="o">-</span><span class="p">(</span><span class="n">v</span><span class="o">+</span><span class="mi">54</span><span class="p">)</span><span class="o">/</span><span class="mi">4</span><span class="p">)</span><span class="o">/</span><span class="mi">4</span>
+        <span class="n">alpha_m_p</span> <span class="o">=</span> <span class="p">(</span><span class="n">den</span><span class="o">*</span><span class="n">num_p</span><span class="o">-</span><span class="n">num</span><span class="o">*</span><span class="n">den_p</span><span class="p">)</span><span class="o">/</span><span class="p">(</span><span class="n">den</span><span class="o">**</span><span class="mi">2</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">alpha_m_p</span>
+
+<div class="viewcode-block" id="RTM_2D.jacobian">
+<a class="viewcode-back" href="../../../../modules.html#mndynamics.models.py.RTM_Base.RTM_2D.jacobian">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">jacobian</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">x0</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&#39;&#39;&#39;</span>
+<span class="sd">        Jacobian of the Reduced 2D RTM Model</span>
+<span class="sd">        &#39;&#39;&#39;</span>
+        <span class="n">v</span><span class="p">,</span> <span class="n">n</span> <span class="o">=</span> <span class="n">x0</span>
+        <span class="n">m_inf</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">m_inf</span><span class="p">(</span><span class="n">v</span><span class="p">)</span>
+        <span class="n">m_inf_p</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">m_inf_p</span><span class="p">(</span><span class="n">v</span><span class="p">)</span>
+        <span class="n">beta_n_p</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">beta_n_p</span><span class="p">(</span><span class="n">v</span><span class="p">)</span>
+        <span class="n">alpha_n_p</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">alpha_n_p</span><span class="p">(</span><span class="n">v</span><span class="p">)</span>
+        <span class="n">alpha_n</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">alpha_n</span><span class="p">(</span><span class="n">v</span><span class="p">)</span>
+        <span class="n">beta_n</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">beta_n</span><span class="p">(</span><span class="n">v</span><span class="p">)</span>
+
+        <span class="n">h</span> <span class="o">=</span> <span class="mf">1.0</span> <span class="o">-</span> <span class="n">n</span>
+
+        <span class="n">g_na</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">g_na</span>
+        <span class="n">g_k</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">g_k</span>
+        <span class="n">g_l</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">g_l</span>
+        <span class="n">v_na</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">v_na</span>
+        <span class="n">v_k</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">v_k</span>
+        <span class="n">v_l</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">v_l</span>
+        <span class="n">inv_c</span> <span class="o">=</span> <span class="mf">1.0</span><span class="o">/</span><span class="bp">self</span><span class="o">.</span><span class="n">c</span>
+
+        <span class="n">J</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">zeros</span><span class="p">((</span><span class="mi">2</span><span class="p">,</span> <span class="mi">2</span><span class="p">),</span> <span class="n">dtype</span><span class="o">=</span><span class="nb">float</span><span class="p">)</span>
+        <span class="n">J</span><span class="p">[</span><span class="mi">0</span><span class="p">,</span> <span class="mi">0</span><span class="p">]</span> <span class="o">=</span> <span class="p">(</span><span class="n">g_na</span><span class="o">*</span><span class="mi">3</span><span class="o">*</span><span class="n">m_inf</span><span class="o">**</span><span class="mi">2</span><span class="o">*</span><span class="n">m_inf_p</span><span class="o">*</span><span class="p">(</span><span class="mi">1</span><span class="o">-</span><span class="n">n</span><span class="p">)</span><span class="o">*</span><span class="p">(</span><span class="n">v_na</span><span class="o">-</span><span class="n">v</span><span class="p">)</span> <span class="o">-</span>
+                   <span class="n">g_na</span><span class="o">*</span><span class="n">m_inf</span><span class="o">**</span><span class="mi">3</span><span class="o">*</span><span class="p">(</span><span class="mi">1</span><span class="o">-</span><span class="n">n</span><span class="p">)</span> <span class="o">-</span>
+                   <span class="n">g_k</span><span class="o">*</span><span class="n">n</span><span class="o">**</span><span class="mi">4</span><span class="o">-</span><span class="n">g_l</span><span class="p">)</span> <span class="o">*</span> <span class="n">inv_c</span>
+        <span class="n">J</span><span class="p">[</span><span class="mi">0</span><span class="p">,</span> <span class="mi">1</span><span class="p">]</span> <span class="o">=</span> <span class="p">(</span><span class="o">-</span><span class="n">g_na</span><span class="o">*</span><span class="n">m_inf</span><span class="o">**</span><span class="mi">3</span><span class="o">*</span><span class="p">(</span><span class="n">v_na</span><span class="o">-</span><span class="n">v</span><span class="p">)</span><span class="o">+</span><span class="n">g_k</span><span class="o">*</span><span class="mi">4</span><span class="o">*</span><span class="n">n</span><span class="o">**</span><span class="mi">3</span><span class="o">*</span><span class="p">(</span><span class="n">v_k</span><span class="o">-</span><span class="n">v</span><span class="p">))</span><span class="o">*</span><span class="n">inv_c</span>
+        <span class="n">J</span><span class="p">[</span><span class="mi">1</span><span class="p">,</span> <span class="mi">0</span><span class="p">]</span> <span class="o">=</span> <span class="p">(</span><span class="n">alpha_n_p</span><span class="o">*</span><span class="p">(</span><span class="mi">1</span><span class="o">-</span><span class="n">n</span><span class="p">)</span><span class="o">-</span><span class="n">beta_n_p</span><span class="o">*</span><span class="n">n</span><span class="p">)</span><span class="o">*</span><span class="n">inv_c</span>
+        <span class="n">J</span><span class="p">[</span><span class="mi">1</span><span class="p">,</span> <span class="mi">1</span><span class="p">]</span> <span class="o">=</span> <span class="p">(</span><span class="o">-</span><span class="n">alpha_n</span><span class="o">-</span><span class="n">beta_n</span><span class="p">)</span><span class="o">*</span><span class="n">inv_c</span>
+
+        <span class="k">return</span> <span class="n">J</span></div>
+
+
+    <span class="k">def</span><span class="w"> </span><span class="nf">F</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">v</span><span class="p">,</span> <span class="n">i_ext</span><span class="p">):</span>
+        <span class="n">g_na</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">g_na</span>
+        <span class="n">g_k</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">g_k</span>
+        <span class="n">g_l</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">g_l</span>
+        <span class="n">v_na</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">v_na</span>
+        <span class="n">v_k</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">v_k</span>
+        <span class="n">v_l</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">v_l</span>
+        <span class="n">m_inf</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">m_inf</span><span class="p">(</span><span class="n">v</span><span class="p">)</span>
+        <span class="n">n_inf</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">n_inf</span><span class="p">(</span><span class="n">v</span><span class="p">)</span>
+
+        <span class="k">return</span> <span class="p">(</span><span class="n">g_na</span><span class="o">*</span><span class="n">m_inf</span><span class="o">**</span><span class="mi">3</span><span class="o">*</span><span class="p">(</span><span class="mi">1</span><span class="o">-</span><span class="n">n_inf</span><span class="p">)</span><span class="o">*</span><span class="p">(</span><span class="n">v_na</span><span class="o">-</span><span class="n">v</span><span class="p">)</span> <span class="o">+</span>
+                <span class="n">g_k</span><span class="o">*</span><span class="n">n_inf</span><span class="o">**</span><span class="mi">4</span><span class="o">*</span><span class="p">(</span><span class="n">v_k</span><span class="o">-</span><span class="n">v</span><span class="p">)</span> <span class="o">+</span>
+                <span class="n">g_l</span><span class="o">*</span><span class="p">(</span><span class="n">v_l</span><span class="o">-</span><span class="n">v</span><span class="p">)</span><span class="o">+</span><span class="n">i_ext</span><span class="p">)</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="nf">F2</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">v</span><span class="p">,</span> <span class="n">i_ext</span><span class="p">):</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">F</span><span class="p">(</span><span class="n">v</span><span class="p">,</span> <span class="n">i_ext</span><span class="p">)</span><span class="o">**</span><span class="mi">2</span>
+
+<div class="viewcode-block" id="RTM_2D.classify_eig">
+<a class="viewcode-back" href="../../../../modules.html#mndynamics.models.py.RTM_Base.RTM_2D.classify_eig">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">classify_eig</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">E</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&#39;&#39;&#39;</span>
+<span class="sd">        Classify the eigenvalues of the Jacobian</span>
+<span class="sd">        both real and negative: stable</span>
+<span class="sd">        both real and positive: unstable</span>
+<span class="sd">        complex conjugate pair, negative real part: stable spiral</span>
+<span class="sd">        complex conjugate pair, positive real part: unstable spiral</span>
+<span class="sd">        both real, one positive, one negative: saddle</span>
+<span class="sd">        &#39;&#39;&#39;</span>
+        <span class="k">assert</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">E</span><span class="p">)</span> <span class="o">==</span> <span class="mi">2</span><span class="p">),</span> <span class="s1">&#39;length of input should be 2&#39;</span>
+        <span class="n">E</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">(</span><span class="n">E</span><span class="p">)</span>
+
+        <span class="n">e1</span><span class="p">,</span> <span class="n">e2</span> <span class="o">=</span> <span class="n">E</span>
+        <span class="c1"># check if both are real</span>
+        <span class="k">if</span> <span class="n">np</span><span class="o">.</span><span class="n">all</span><span class="p">(</span><span class="n">e1</span><span class="o">.</span><span class="n">imag</span> <span class="o">&lt;</span> <span class="mf">1e-10</span><span class="p">)</span> <span class="ow">and</span> <span class="n">np</span><span class="o">.</span><span class="n">all</span><span class="p">(</span><span class="n">e2</span><span class="o">.</span><span class="n">imag</span> <span class="o">&lt;</span> <span class="mf">1e-10</span><span class="p">):</span>
+            <span class="k">if</span> <span class="n">np</span><span class="o">.</span><span class="n">all</span><span class="p">(</span><span class="n">e1</span><span class="o">.</span><span class="n">real</span> <span class="o">&lt;</span> <span class="mi">0</span><span class="p">)</span> <span class="ow">and</span> <span class="n">np</span><span class="o">.</span><span class="n">all</span><span class="p">(</span><span class="n">e2</span><span class="o">.</span><span class="n">real</span> <span class="o">&lt;</span> <span class="mi">0</span><span class="p">):</span>
+                <span class="k">return</span> <span class="s1">&#39;stable&#39;</span>
+            <span class="k">elif</span> <span class="n">np</span><span class="o">.</span><span class="n">all</span><span class="p">(</span><span class="n">e1</span><span class="o">.</span><span class="n">real</span> <span class="o">&gt;</span> <span class="mi">0</span><span class="p">)</span> <span class="ow">and</span> <span class="n">np</span><span class="o">.</span><span class="n">all</span><span class="p">(</span><span class="n">e2</span><span class="o">.</span><span class="n">real</span> <span class="o">&gt;</span> <span class="mi">0</span><span class="p">):</span>
+                <span class="k">return</span> <span class="s1">&#39;unstable&#39;</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="k">return</span> <span class="s1">&#39;saddle&#39;</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">_if_complex_conjugate</span><span class="p">(</span><span class="n">e1</span><span class="p">,</span> <span class="n">e2</span><span class="p">):</span>
+                <span class="k">if</span> <span class="n">np</span><span class="o">.</span><span class="n">all</span><span class="p">(</span><span class="n">e1</span><span class="o">.</span><span class="n">real</span> <span class="o">&lt;</span> <span class="mi">0</span><span class="p">):</span>
+                    <span class="k">return</span> <span class="s1">&#39;stable spiral&#39;</span>
+                <span class="k">elif</span> <span class="n">np</span><span class="o">.</span><span class="n">all</span><span class="p">(</span><span class="n">e1</span><span class="o">.</span><span class="n">real</span> <span class="o">&gt;</span> <span class="mi">0</span><span class="p">):</span>
+                    <span class="k">return</span> <span class="s1">&#39;unstable spiral&#39;</span>
+                <span class="k">else</span><span class="p">:</span>
+                    <span class="k">return</span> <span class="s1">&#39;unknown&#39;</span></div>
+
+
+    <span class="k">def</span><span class="w"> </span><span class="nf">_if_complex_conjugate</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">a</span><span class="p">,</span> <span class="n">b</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&#39;&#39;&#39;</span>
+<span class="sd">        check if 2 input are complex conjugate pair</span>
+<span class="sd">        &#39;&#39;&#39;</span>
+        <span class="k">if</span> <span class="n">np</span><span class="o">.</span><span class="n">all</span><span class="p">(</span><span class="n">a</span><span class="o">.</span><span class="n">real</span> <span class="o">==</span> <span class="n">b</span><span class="o">.</span><span class="n">real</span><span class="p">)</span> <span class="ow">and</span> <span class="n">np</span><span class="o">.</span><span class="n">all</span><span class="p">(</span><span class="n">a</span><span class="o">.</span><span class="n">imag</span> <span class="o">==</span> <span class="o">-</span><span class="n">b</span><span class="o">.</span><span class="n">imag</span><span class="p">):</span>
+            <span class="k">return</span> <span class="kc">True</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="k">return</span> <span class="kc">False</span>
+
+<div class="viewcode-block" id="RTM_2D.simulate_bif">
+<a class="viewcode-back" href="../../../../modules.html#mndynamics.models.py.RTM_Base.RTM_2D.simulate_bif">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">simulate_bif</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">i_ext_vec</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&#39;&#39;&#39;</span>
+<span class="sd">        Simulate the bifurcation diagram</span>
+<span class="sd">        &#39;&#39;&#39;</span>
+        <span class="n">v_k</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">v_k</span>
+        <span class="n">v_na</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">v_na</span>
+        <span class="n">v_l</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">v_l</span>
+        <span class="n">g_l</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">g_l</span>
+
+        <span class="n">stability</span> <span class="o">=</span> <span class="p">{</span>
+            <span class="s1">&#39;stable&#39;</span><span class="p">:</span> <span class="p">[],</span>
+            <span class="s1">&#39;unstable&#39;</span><span class="p">:</span> <span class="p">[],</span>
+            <span class="s1">&#39;saddle&#39;</span><span class="p">:</span> <span class="p">[],</span>
+            <span class="s1">&#39;stable spiral&#39;</span><span class="p">:</span> <span class="p">[],</span>
+            <span class="s1">&#39;unstable spiral&#39;</span><span class="p">:</span> <span class="p">[]</span>
+        <span class="p">}</span>
+
+        <span class="k">assert</span><span class="p">(</span><span class="n">is_sequence</span><span class="p">(</span><span class="n">i_ext_vec</span><span class="p">)),</span> <span class="s1">&#39;i_ext should be a sequence&#39;</span>
+        <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">i_ext_vec</span><span class="p">)):</span>
+            <span class="n">i_ext</span> <span class="o">=</span> <span class="n">i_ext_vec</span><span class="p">[</span><span class="n">i</span><span class="p">]</span>
+            <span class="n">v_min</span> <span class="o">=</span> <span class="nb">min</span><span class="p">(</span><span class="n">v_k</span><span class="p">,</span> <span class="n">v_l</span><span class="o">+</span><span class="n">i_ext</span><span class="o">/</span><span class="n">g_l</span><span class="p">)</span>
+            <span class="n">v_max</span> <span class="o">=</span> <span class="nb">max</span><span class="p">(</span><span class="n">v_na</span><span class="p">,</span> <span class="n">v_l</span><span class="o">+</span><span class="n">i_ext</span><span class="o">/</span><span class="n">g_l</span><span class="p">)</span>
+            <span class="n">v_vec</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">linspace</span><span class="p">(</span><span class="n">v_min</span><span class="p">,</span> <span class="n">v_max</span><span class="p">,</span> <span class="mi">100</span><span class="p">)</span>
+            <span class="n">v_vec_left</span> <span class="o">=</span> <span class="n">v_vec</span><span class="p">[:</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span>
+            <span class="n">v_vec_right</span> <span class="o">=</span> <span class="n">v_vec</span><span class="p">[</span><span class="mi">1</span><span class="p">:]</span>
+            <span class="n">f2</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">F</span><span class="p">(</span><span class="n">v_vec_left</span><span class="p">,</span> <span class="n">i_ext</span><span class="p">)</span> <span class="o">*</span> <span class="bp">self</span><span class="o">.</span><span class="n">F</span><span class="p">(</span><span class="n">v_vec_right</span><span class="p">,</span> <span class="n">i_ext</span><span class="p">)</span>
+            <span class="n">ind</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">where</span><span class="p">(</span><span class="n">f2</span> <span class="o">&lt;</span> <span class="mi">0</span><span class="p">)[</span><span class="mi">0</span><span class="p">]</span>
+
+            <span class="k">for</span> <span class="n">j</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">ind</span><span class="p">)):</span>
+                <span class="n">v_root</span> <span class="o">=</span> <span class="n">brentq</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">F</span><span class="p">,</span>
+                                <span class="n">v_vec_left</span><span class="p">[</span><span class="n">ind</span><span class="p">[</span><span class="n">j</span><span class="p">]],</span>
+                                <span class="n">v_vec_right</span><span class="p">[</span><span class="n">ind</span><span class="p">[</span><span class="n">j</span><span class="p">]],</span>
+                                <span class="n">args</span><span class="o">=</span><span class="p">(</span><span class="n">i_ext</span><span class="p">,))</span>
+                <span class="n">n_root</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">n_inf</span><span class="p">(</span><span class="n">v_root</span><span class="p">)</span>
+                <span class="n">J</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">jacobian</span><span class="p">([</span><span class="n">v_root</span><span class="p">,</span> <span class="n">n_root</span><span class="p">])</span>
+                <span class="n">E</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">linalg</span><span class="o">.</span><span class="n">eigvals</span><span class="p">(</span><span class="n">J</span><span class="p">)</span>
+                <span class="n">stability</span><span class="p">[</span><span class="bp">self</span><span class="o">.</span><span class="n">classify_eig</span><span class="p">(</span><span class="n">E</span><span class="p">)]</span><span class="o">.</span><span class="n">append</span><span class="p">([</span><span class="n">i_ext</span><span class="p">,</span> <span class="n">v_root</span><span class="p">])</span>
+
+        <span class="k">return</span> <span class="n">stability</span></div>
+
+
+<div class="viewcode-block" id="RTM_2D.plot_bif">
+<a class="viewcode-back" href="../../../../modules.html#mndynamics.models.py.RTM_Base.RTM_2D.plot_bif">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">plot_bif</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">stability</span><span class="p">,</span> <span class="n">ax</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&#39;&#39;&#39;</span>
+<span class="sd">        Plot the bifurcation diagram</span>
+<span class="sd">        &#39;&#39;&#39;</span>
+        <span class="k">if</span> <span class="n">ax</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="n">fig</span> <span class="o">=</span> <span class="n">plt</span><span class="o">.</span><span class="n">figure</span><span class="p">()</span>
+            <span class="n">ax</span> <span class="o">=</span> <span class="n">fig</span><span class="o">.</span><span class="n">add_subplot</span><span class="p">(</span><span class="mi">111</span><span class="p">)</span>
+        <span class="n">ax</span><span class="o">.</span><span class="n">set_xlabel</span><span class="p">(</span><span class="sa">r</span><span class="s1">&#39;$\mu A/cm^2$&#39;</span><span class="p">)</span>
+        <span class="n">ax</span><span class="o">.</span><span class="n">set_ylabel</span><span class="p">(</span><span class="sa">r</span><span class="s1">&#39;$v^{*}$ [mV]&#39;</span><span class="p">)</span>
+
+        <span class="k">for</span> <span class="n">key</span> <span class="ow">in</span> <span class="n">stability</span><span class="o">.</span><span class="n">keys</span><span class="p">():</span>
+            <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">stability</span><span class="p">[</span><span class="n">key</span><span class="p">])</span> <span class="o">&gt;</span> <span class="mi">0</span><span class="p">:</span>
+                <span class="n">stability</span><span class="p">[</span><span class="n">key</span><span class="p">]</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">(</span><span class="n">stability</span><span class="p">[</span><span class="n">key</span><span class="p">])</span>
+                <span class="n">ax</span><span class="o">.</span><span class="n">plot</span><span class="p">(</span><span class="n">stability</span><span class="p">[</span><span class="n">key</span><span class="p">][:,</span> <span class="mi">0</span><span class="p">],</span> <span class="n">stability</span><span class="p">[</span><span class="n">key</span><span class="p">]</span>
+                        <span class="p">[:,</span> <span class="mi">1</span><span class="p">],</span> <span class="s1">&#39;o&#39;</span><span class="p">,</span> <span class="n">label</span><span class="o">=</span><span class="n">key</span><span class="p">,</span> <span class="n">markersize</span><span class="o">=</span><span class="mi">4</span><span class="p">,</span> <span class="n">alpha</span><span class="o">=</span><span class="mf">0.7</span><span class="p">)</span>
+        <span class="n">ax</span><span class="o">.</span><span class="n">legend</span><span class="p">(</span><span class="n">frameon</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> <span class="n">loc</span><span class="o">=</span><span class="s1">&#39;best&#39;</span><span class="p">)</span></div>
+</div>
+
+
+
+<div class="viewcode-block" id="RTM_F_I_CURVE">
+<a class="viewcode-back" href="../../../../modules.html#mndynamics.models.py.RTM_Base.RTM_F_I_CURVE">[docs]</a>
+<span class="k">class</span><span class="w"> </span><span class="nc">RTM_F_I_CURVE</span><span class="p">(</span><span class="n">RTM</span><span class="p">):</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">par</span><span class="o">=</span><span class="p">{}):</span>
+        <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="fm">__init__</span><span class="p">(</span><span class="n">par</span><span class="p">)</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="fm">__str__</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
+        <span class="k">return</span> <span class="s1">&#39;RTM_F_I_CURVE&#39;</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="fm">__call__</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;F-I Curve RTM Model&quot;</span><span class="p">)</span>
+        <span class="k">return</span> <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="fm">__call__</span><span class="p">()</span>
+
+<div class="viewcode-block" id="RTM_F_I_CURVE.simulate_F_I">
+<a class="viewcode-back" href="../../../../modules.html#mndynamics.models.py.RTM_Base.RTM_F_I_CURVE.simulate_F_I">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">simulate_F_I</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">vec_i_ext</span><span class="p">,</span> <span class="n">tspan</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">directions</span><span class="o">=</span><span class="s1">&#39;both&#39;</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&#39;&#39;&#39;</span>
+<span class="sd">        Simulate the F-I curve with a sequence of i_ext</span>
+<span class="sd">        &#39;&#39;&#39;</span>
+        <span class="k">assert</span><span class="p">(</span><span class="n">is_sequence</span><span class="p">(</span><span class="n">vec_i_ext</span><span class="p">)),</span> <span class="s1">&#39;i_ext should be a sequence&#39;</span>
+
+        <span class="n">tspan</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">tspan</span> <span class="k">if</span> <span class="n">tspan</span> <span class="ow">is</span> <span class="kc">None</span> <span class="k">else</span> <span class="n">tspan</span>
+        <span class="n">num_steps</span> <span class="o">=</span> <span class="nb">len</span><span class="p">(</span><span class="n">tspan</span><span class="p">)</span>
+        <span class="n">dt</span> <span class="o">=</span> <span class="n">tspan</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span> <span class="o">-</span> <span class="n">tspan</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>
+        <span class="n">N</span> <span class="o">=</span> <span class="nb">int</span><span class="p">(</span><span class="mi">1000</span> <span class="o">/</span> <span class="n">dt</span><span class="p">)</span>
+        <span class="n">v_thr</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">v_thr</span>
+        <span class="n">data</span> <span class="o">=</span> <span class="p">{</span><span class="s2">&quot;i_ext&quot;</span><span class="p">:</span> <span class="n">vec_i_ext</span><span class="p">}</span>
+
+        <span class="k">if</span> <span class="n">directions</span> <span class="o">==</span> <span class="s1">&#39;both&#39;</span><span class="p">:</span>
+            <span class="n">directions</span> <span class="o">=</span> <span class="p">[</span><span class="s1">&#39;forward&#39;</span><span class="p">,</span> <span class="s1">&#39;backward&#39;</span><span class="p">]</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">directions</span> <span class="o">=</span> <span class="p">[</span><span class="n">directions</span><span class="p">]</span>
+
+        <span class="k">for</span> <span class="n">direction</span> <span class="ow">in</span> <span class="n">directions</span><span class="p">:</span>
+
+            <span class="n">freq</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">zeros</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">vec_i_ext</span><span class="p">))</span>
+            <span class="n">x0</span> <span class="o">=</span> <span class="kc">None</span>
+
+            <span class="k">if</span> <span class="n">direction</span> <span class="o">==</span> <span class="s2">&quot;backward&quot;</span><span class="p">:</span>
+                <span class="n">vec_i_ext</span> <span class="o">=</span> <span class="n">vec_i_ext</span><span class="p">[::</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span>
+
+            <span class="k">for</span> <span class="n">ii</span> <span class="ow">in</span> <span class="n">tqdm</span><span class="p">(</span><span class="nb">range</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">vec_i_ext</span><span class="p">)),</span> <span class="n">desc</span><span class="o">=</span><span class="n">direction</span><span class="p">):</span>
+                <span class="n">num_spikes</span> <span class="o">=</span> <span class="mi">0</span>
+                <span class="n">t_spikes</span> <span class="o">=</span> <span class="p">[]</span>
+                <span class="n">i_ext</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">i_ext</span> <span class="o">=</span> <span class="n">vec_i_ext</span><span class="p">[</span><span class="n">ii</span><span class="p">]</span>
+
+                <span class="c1"># set the last state as the initial state</span>
+                <span class="k">if</span> <span class="n">ii</span> <span class="o">&gt;</span> <span class="mi">0</span><span class="p">:</span>
+                    <span class="n">x0</span> <span class="o">=</span> <span class="p">[</span><span class="n">v</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">],</span> <span class="n">m</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">],</span> <span class="n">h</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">],</span> <span class="n">n</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">]]</span>
+
+                <span class="n">sol</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">simulate</span><span class="p">(</span><span class="n">tspan</span><span class="p">,</span> <span class="n">x0</span><span class="o">=</span><span class="n">x0</span><span class="p">)</span>
+                <span class="n">v</span> <span class="o">=</span> <span class="n">sol</span><span class="p">[</span><span class="s1">&#39;v&#39;</span><span class="p">]</span>
+                <span class="n">m</span> <span class="o">=</span> <span class="n">sol</span><span class="p">[</span><span class="s1">&#39;m&#39;</span><span class="p">]</span>
+                <span class="n">h</span> <span class="o">=</span> <span class="n">sol</span><span class="p">[</span><span class="s1">&#39;h&#39;</span><span class="p">]</span>
+                <span class="n">n</span> <span class="o">=</span> <span class="n">sol</span><span class="p">[</span><span class="s1">&#39;n&#39;</span><span class="p">]</span>
+                <span class="c1"># find steady state</span>
+                <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">num_steps</span><span class="p">):</span>
+                    <span class="k">if</span> <span class="p">((</span><span class="n">i</span> <span class="o">%</span> <span class="n">N</span><span class="p">)</span> <span class="o">==</span> <span class="mi">0</span><span class="p">)</span> <span class="ow">and</span> <span class="p">(</span><span class="n">i</span> <span class="o">&gt;</span> <span class="mi">0</span><span class="p">):</span>
+                        <span class="n">maxv</span> <span class="o">=</span> <span class="nb">max</span><span class="p">(</span><span class="n">v</span><span class="p">[</span><span class="n">i</span> <span class="o">-</span> <span class="n">N</span><span class="p">:</span><span class="n">i</span><span class="p">])</span>
+                        <span class="n">minv</span> <span class="o">=</span> <span class="nb">min</span><span class="p">(</span><span class="n">v</span><span class="p">[</span><span class="n">i</span> <span class="o">-</span> <span class="n">N</span><span class="p">:</span><span class="n">i</span><span class="p">])</span>
+                        <span class="n">maxm</span> <span class="o">=</span> <span class="nb">max</span><span class="p">(</span><span class="n">m</span><span class="p">[</span><span class="n">i</span> <span class="o">-</span> <span class="n">N</span><span class="p">:</span><span class="n">i</span><span class="p">])</span>
+                        <span class="n">minm</span> <span class="o">=</span> <span class="nb">min</span><span class="p">(</span><span class="n">m</span><span class="p">[</span><span class="n">i</span> <span class="o">-</span> <span class="n">N</span><span class="p">:</span><span class="n">i</span><span class="p">])</span>
+                        <span class="n">maxn</span> <span class="o">=</span> <span class="nb">max</span><span class="p">(</span><span class="n">n</span><span class="p">[</span><span class="n">i</span> <span class="o">-</span> <span class="n">N</span><span class="p">:</span><span class="n">i</span><span class="p">])</span>
+                        <span class="n">minn</span> <span class="o">=</span> <span class="nb">min</span><span class="p">(</span><span class="n">n</span><span class="p">[</span><span class="n">i</span> <span class="o">-</span> <span class="n">N</span><span class="p">:</span><span class="n">i</span><span class="p">])</span>
+                        <span class="n">maxh</span> <span class="o">=</span> <span class="nb">max</span><span class="p">(</span><span class="n">h</span><span class="p">[</span><span class="n">i</span> <span class="o">-</span> <span class="n">N</span><span class="p">:</span><span class="n">i</span><span class="p">])</span>
+                        <span class="n">minh</span> <span class="o">=</span> <span class="nb">min</span><span class="p">(</span><span class="n">h</span><span class="p">[</span><span class="n">i</span> <span class="o">-</span> <span class="n">N</span><span class="p">:</span><span class="n">i</span><span class="p">])</span>
+                        <span class="k">if</span> <span class="p">(((</span><span class="n">maxv</span> <span class="o">-</span> <span class="n">minv</span><span class="p">)</span> <span class="o">&lt;</span> <span class="mf">0.0001</span> <span class="o">*</span> <span class="nb">abs</span><span class="p">(</span><span class="n">maxv</span> <span class="o">+</span> <span class="n">minv</span><span class="p">))</span> <span class="o">&amp;</span>
+                            <span class="p">((</span><span class="n">maxm</span> <span class="o">-</span> <span class="n">minm</span><span class="p">)</span> <span class="o">&lt;</span> <span class="mf">0.0001</span> <span class="o">*</span> <span class="nb">abs</span><span class="p">(</span><span class="n">maxm</span> <span class="o">+</span> <span class="n">minm</span><span class="p">))</span> <span class="o">&amp;</span>
+                            <span class="p">((</span><span class="n">maxh</span> <span class="o">-</span> <span class="n">minh</span><span class="p">)</span> <span class="o">&lt;</span> <span class="mf">0.0001</span> <span class="o">*</span> <span class="nb">abs</span><span class="p">(</span><span class="n">maxh</span> <span class="o">+</span> <span class="n">minh</span><span class="p">))</span> <span class="o">&amp;</span>
+                                <span class="p">((</span><span class="n">maxn</span> <span class="o">-</span> <span class="n">minn</span><span class="p">)</span> <span class="o">&lt;</span> <span class="mf">0.0001</span> <span class="o">*</span> <span class="nb">abs</span><span class="p">(</span><span class="n">maxn</span> <span class="o">+</span> <span class="n">minn</span><span class="p">))):</span>
+                            <span class="n">freq</span><span class="p">[</span><span class="n">ii</span><span class="p">]</span> <span class="o">=</span> <span class="mf">0.0</span>
+                            <span class="c1"># print (&quot;I =%10.3f, f =%10.2f&quot; % (i_ext, freq[ii]))</span>
+                            <span class="k">break</span>
+
+                    <span class="c1"># spike detection</span>
+                    <span class="k">if</span> <span class="p">(</span><span class="n">i</span> <span class="o">&gt;</span> <span class="mi">0</span><span class="p">)</span> <span class="o">&amp;</span> <span class="p">(</span><span class="n">v</span><span class="p">[</span><span class="n">i</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span> <span class="o">&lt;</span> <span class="n">v_thr</span><span class="p">)</span> <span class="o">&amp;</span> <span class="p">(</span><span class="n">v</span><span class="p">[</span><span class="n">i</span><span class="p">]</span> <span class="o">&gt;=</span> <span class="n">v_thr</span><span class="p">):</span>
+                        <span class="n">num_spikes</span> <span class="o">+=</span> <span class="mi">1</span>
+                        <span class="n">tmp</span> <span class="o">=</span> <span class="p">((</span><span class="n">i</span> <span class="o">-</span> <span class="mi">1</span><span class="p">)</span> <span class="o">*</span> <span class="n">dt</span> <span class="o">*</span> <span class="p">(</span><span class="n">v</span><span class="p">[</span><span class="n">i</span> <span class="o">-</span> <span class="mi">1</span><span class="p">]</span> <span class="o">-</span> <span class="n">v_thr</span><span class="p">)</span> <span class="o">+</span>
+                               <span class="n">i</span> <span class="o">*</span> <span class="n">dt</span> <span class="o">*</span> <span class="p">(</span><span class="n">v_thr</span> <span class="o">-</span> <span class="n">v</span><span class="p">[</span><span class="n">i</span><span class="p">]))</span> <span class="o">/</span> <span class="p">(</span><span class="n">v</span><span class="p">[</span><span class="n">i</span> <span class="o">-</span> <span class="mi">1</span><span class="p">]</span> <span class="o">-</span> <span class="n">v</span><span class="p">[</span><span class="n">i</span><span class="p">])</span>
+                        <span class="n">t_spikes</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">tmp</span><span class="p">)</span>
+
+                    <span class="k">if</span> <span class="n">num_spikes</span> <span class="o">==</span> <span class="mi">4</span><span class="p">:</span>
+                        <span class="n">freq</span><span class="p">[</span><span class="n">ii</span><span class="p">]</span> <span class="o">=</span> <span class="mf">1000.0</span> <span class="o">/</span> <span class="p">(</span><span class="n">t_spikes</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span> <span class="o">-</span> <span class="n">t_spikes</span><span class="p">[</span><span class="o">-</span><span class="mi">2</span><span class="p">])</span>
+                        <span class="c1"># print (&quot;I =%10.3f, f =%10.2f&quot; % (i_ext, freq[ii]))</span>
+                        <span class="k">break</span>
+            <span class="n">data</span><span class="p">[</span><span class="n">direction</span><span class="p">]</span> <span class="o">=</span> <span class="n">freq</span>
+        <span class="k">if</span> <span class="s1">&#39;backward&#39;</span> <span class="ow">in</span> <span class="n">data</span><span class="o">.</span><span class="n">keys</span><span class="p">():</span>
+            <span class="n">data</span><span class="p">[</span><span class="s1">&#39;backward&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">data</span><span class="p">[</span><span class="s1">&#39;backward&#39;</span><span class="p">][::</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span>
+        <span class="k">return</span> <span class="n">data</span></div>
+
+
+<div class="viewcode-block" id="RTM_F_I_CURVE.plot_F_I">
+<a class="viewcode-back" href="../../../../modules.html#mndynamics.models.py.RTM_Base.RTM_F_I_CURVE.plot_F_I">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">plot_F_I</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">data</span><span class="p">,</span> <span class="n">ax</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&#39;&#39;&#39;</span>
+<span class="sd">        plot F-I curve</span>
+<span class="sd">        &#39;&#39;&#39;</span>
+        <span class="n">directions</span> <span class="o">=</span> <span class="nb">list</span><span class="p">(</span><span class="n">data</span><span class="o">.</span><span class="n">keys</span><span class="p">())</span>
+        <span class="n">directions</span><span class="o">.</span><span class="n">remove</span><span class="p">(</span><span class="s1">&#39;i_ext&#39;</span><span class="p">)</span>
+
+        <span class="n">ax</span> <span class="o">=</span> <span class="n">plt</span><span class="o">.</span><span class="n">gca</span><span class="p">()</span> <span class="k">if</span> <span class="n">ax</span> <span class="ow">is</span> <span class="kc">None</span> <span class="k">else</span> <span class="n">ax</span>
+        <span class="k">for</span> <span class="n">direction</span> <span class="ow">in</span> <span class="n">directions</span><span class="p">:</span>
+            <span class="n">f</span> <span class="o">=</span> <span class="n">data</span><span class="p">[</span><span class="n">direction</span><span class="p">]</span>
+            <span class="n">I</span> <span class="o">=</span> <span class="n">data</span><span class="p">[</span><span class="s1">&#39;i_ext&#39;</span><span class="p">]</span>
+            <span class="k">if</span> <span class="n">direction</span> <span class="o">==</span> <span class="s1">&#39;forward&#39;</span><span class="p">:</span>
+                <span class="n">ax</span><span class="o">.</span><span class="n">plot</span><span class="p">(</span><span class="n">I</span><span class="p">,</span> <span class="n">f</span><span class="p">,</span> <span class="s1">&#39;ro&#39;</span><span class="p">,</span> <span class="n">fillstyle</span><span class="o">=</span><span class="s2">&quot;none&quot;</span><span class="p">,</span> <span class="n">ms</span><span class="o">=</span><span class="mi">8</span><span class="p">,</span> <span class="n">label</span><span class="o">=</span><span class="s1">&#39;forward&#39;</span><span class="p">)</span>
+            <span class="k">elif</span> <span class="n">direction</span> <span class="o">==</span> <span class="s1">&#39;backward&#39;</span><span class="p">:</span>
+                <span class="n">ax</span><span class="o">.</span><span class="n">plot</span><span class="p">(</span><span class="n">I</span><span class="p">[::</span><span class="o">-</span><span class="mi">1</span><span class="p">],</span> <span class="n">f</span><span class="p">[::</span><span class="o">-</span><span class="mi">1</span><span class="p">],</span> <span class="s2">&quot;bo&quot;</span><span class="p">,</span>
+                        <span class="n">fillstyle</span><span class="o">=</span><span class="s2">&quot;none&quot;</span><span class="p">,</span> <span class="n">label</span><span class="o">=</span><span class="s1">&#39;backward&#39;</span><span class="p">)</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s2">&quot;direction must be &#39;forward&#39; or &#39;backward&#39;&quot;</span><span class="p">)</span>
+
+        <span class="n">ax</span><span class="o">.</span><span class="n">set_xlabel</span><span class="p">(</span><span class="sa">r</span><span class="s1">&#39;$I [\mu A/cm^2]$&#39;</span><span class="p">,</span> <span class="n">labelpad</span><span class="o">=</span><span class="mi">15</span><span class="p">)</span>
+        <span class="n">ax</span><span class="o">.</span><span class="n">set_ylabel</span><span class="p">(</span><span class="s1">&#39;frequency [Hz]&#39;</span><span class="p">)</span>
+        <span class="n">ax</span><span class="o">.</span><span class="n">legend</span><span class="p">()</span>
+        <span class="k">return</span> <span class="n">ax</span></div>
+</div>
+
+
+
+<div class="viewcode-block" id="RTM_ins">
+<a class="viewcode-back" href="../../../../modules.html#mndynamics.models.py.RTM_Base.RTM_ins">[docs]</a>
+<span class="k">class</span><span class="w"> </span><span class="nc">RTM_ins</span><span class="p">(</span><span class="n">RTM</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Reduced Traub-Miles Model of a Pyramidal Neuron in Rat Hippocampus</span>
+<span class="sd">    with nearly instantaneous rise synapse.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">par</span><span class="p">:</span> <span class="nb">dict</span> <span class="o">=</span> <span class="p">{})</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="fm">__init__</span><span class="p">(</span><span class="n">par</span><span class="p">)</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="fm">__call__</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;&quot;&quot;Reduced Traub-Miles Model of a Pyramidal Neuron </span>
+<span class="s2">in Rat Hippocampus with nearly instantaneous rise synapse.&quot;&quot;&quot;</span><span class="p">)</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_par</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="fm">__str__</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
+        <span class="k">return</span> <span class="s2">&quot;&quot;&quot;Reduced Traub-Miles Model of a Pyramidal Neuron </span>
+<span class="s2">in Rat Hippocampus with nearly instantaneous rise synapse.&quot;&quot;&quot;</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="nf">get_default_parameters</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="n">params</span> <span class="o">=</span> <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="n">get_default_parameters</span><span class="p">()</span>
+        <span class="n">params</span><span class="o">.</span><span class="n">update</span><span class="p">({</span><span class="s1">&#39;tau_r&#39;</span><span class="p">:</span> <span class="mf">0.2</span><span class="p">,</span>
+                       <span class="s1">&#39;tau_d&#39;</span><span class="p">:</span> <span class="mf">2.0</span><span class="p">})</span>
+        <span class="k">return</span> <span class="n">params</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="nf">set_initial_state</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+
+        <span class="n">x0</span> <span class="o">=</span> <span class="p">[</span><span class="bp">self</span><span class="o">.</span><span class="n">v0</span><span class="p">,</span>
+              <span class="bp">self</span><span class="o">.</span><span class="n">m_inf</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">v0</span><span class="p">),</span>
+              <span class="bp">self</span><span class="o">.</span><span class="n">h_inf</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">v0</span><span class="p">),</span>
+              <span class="bp">self</span><span class="o">.</span><span class="n">n_inf</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">v0</span><span class="p">),</span>
+              <span class="mf">0.0</span><span class="p">]</span>
+        <span class="k">return</span> <span class="n">x0</span>
+
+<div class="viewcode-block" id="RTM_ins.f_sys">
+<a class="viewcode-back" href="../../../../modules.html#mndynamics.models.py.RTM_Base.RTM_ins.f_sys">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">f_sys</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">x0</span><span class="p">,</span> <span class="n">t</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&#39;&#39;&#39;</span>
+<span class="sd">        define RTM Model</span>
+<span class="sd">        &#39;&#39;&#39;</span>
+        <span class="n">v</span><span class="p">,</span> <span class="n">m</span><span class="p">,</span> <span class="n">h</span><span class="p">,</span> <span class="n">n</span><span class="p">,</span> <span class="n">s</span> <span class="o">=</span> <span class="n">x0</span>
+        <span class="n">dv</span> <span class="o">=</span> <span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">i_ext</span> <span class="o">-</span> <span class="bp">self</span><span class="o">.</span><span class="n">g_na</span> <span class="o">*</span> <span class="n">m</span><span class="o">**</span><span class="mi">3</span> <span class="o">*</span> <span class="n">h</span> <span class="o">*</span> <span class="p">(</span><span class="n">v</span> <span class="o">-</span> <span class="bp">self</span><span class="o">.</span><span class="n">v_na</span><span class="p">)</span> <span class="o">-</span>
+              <span class="bp">self</span><span class="o">.</span><span class="n">g_k</span> <span class="o">*</span> <span class="n">n</span><span class="o">**</span><span class="mi">4</span> <span class="o">*</span> <span class="p">(</span><span class="n">v</span> <span class="o">-</span> <span class="bp">self</span><span class="o">.</span><span class="n">v_k</span><span class="p">)</span> <span class="o">-</span> <span class="bp">self</span><span class="o">.</span><span class="n">g_l</span> <span class="o">*</span> <span class="p">(</span><span class="n">v</span> <span class="o">-</span> <span class="bp">self</span><span class="o">.</span><span class="n">v_l</span><span class="p">))</span> <span class="o">/</span> <span class="bp">self</span><span class="o">.</span><span class="n">c</span>
+        <span class="n">dm</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">alpha_m</span><span class="p">(</span><span class="n">v</span><span class="p">)</span> <span class="o">*</span> <span class="p">(</span><span class="mf">1.0</span> <span class="o">-</span> <span class="n">m</span><span class="p">)</span> <span class="o">-</span> <span class="bp">self</span><span class="o">.</span><span class="n">beta_m</span><span class="p">(</span><span class="n">v</span><span class="p">)</span> <span class="o">*</span> <span class="n">m</span>
+        <span class="n">dh</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">alpha_h</span><span class="p">(</span><span class="n">v</span><span class="p">)</span> <span class="o">*</span> <span class="p">(</span><span class="mf">1.0</span> <span class="o">-</span> <span class="n">h</span><span class="p">)</span> <span class="o">-</span> <span class="bp">self</span><span class="o">.</span><span class="n">beta_h</span><span class="p">(</span><span class="n">v</span><span class="p">)</span> <span class="o">*</span> <span class="n">h</span>
+        <span class="n">dn</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">alpha_n</span><span class="p">(</span><span class="n">v</span><span class="p">)</span> <span class="o">*</span> <span class="p">(</span><span class="mf">1.0</span> <span class="o">-</span> <span class="n">n</span><span class="p">)</span> <span class="o">-</span> <span class="bp">self</span><span class="o">.</span><span class="n">beta_n</span><span class="p">(</span><span class="n">v</span><span class="p">)</span> <span class="o">*</span> <span class="n">n</span>
+        <span class="n">ds</span> <span class="o">=</span> <span class="mf">0.5</span> <span class="o">*</span> <span class="p">(</span><span class="mf">1.0</span><span class="o">+</span><span class="n">np</span><span class="o">.</span><span class="n">tanh</span><span class="p">(</span><span class="mf">0.1</span> <span class="o">*</span> <span class="n">v</span><span class="p">))</span> <span class="o">*</span> <span class="p">(</span><span class="mi">1</span><span class="o">-</span><span class="n">s</span><span class="p">)</span><span class="o">/</span><span class="bp">self</span><span class="o">.</span><span class="n">tau_r</span> <span class="o">-</span> <span class="n">s</span><span class="o">/</span><span class="bp">self</span><span class="o">.</span><span class="n">tau_d</span>
+        <span class="k">return</span> <span class="p">[</span><span class="n">dv</span><span class="p">,</span> <span class="n">dm</span><span class="p">,</span> <span class="n">dh</span><span class="p">,</span> <span class="n">dn</span><span class="p">,</span> <span class="n">ds</span><span class="p">]</span></div>
+
+
+    <span class="k">def</span><span class="w"> </span><span class="nf">simulate</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">tspan</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">x0</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
+
+        <span class="n">x0</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">set_initial_state</span><span class="p">()</span> <span class="k">if</span> <span class="n">x0</span> <span class="ow">is</span> <span class="kc">None</span> <span class="k">else</span> <span class="n">x0</span>
+        <span class="n">tspan</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">tspan</span> <span class="k">if</span> <span class="n">tspan</span> <span class="ow">is</span> <span class="kc">None</span> <span class="k">else</span> <span class="n">tspan</span>
+        <span class="n">sol</span> <span class="o">=</span> <span class="n">odeint</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">f_sys</span><span class="p">,</span> <span class="n">x0</span><span class="p">,</span> <span class="n">tspan</span><span class="p">)</span>
+
+        <span class="k">return</span> <span class="p">{</span><span class="s2">&quot;t&quot;</span><span class="p">:</span> <span class="n">tspan</span><span class="p">,</span>
+                <span class="s2">&quot;v&quot;</span><span class="p">:</span>    <span class="n">sol</span><span class="p">[:,</span> <span class="mi">0</span><span class="p">],</span>
+                <span class="s2">&quot;m&quot;</span><span class="p">:</span>    <span class="n">sol</span><span class="p">[:,</span> <span class="mi">1</span><span class="p">],</span>
+                <span class="s2">&quot;h&quot;</span><span class="p">:</span>    <span class="n">sol</span><span class="p">[:,</span> <span class="mi">2</span><span class="p">],</span>
+                <span class="s2">&quot;n&quot;</span><span class="p">:</span>    <span class="n">sol</span><span class="p">[:,</span> <span class="mi">3</span><span class="p">],</span>
+                <span class="s2">&quot;s&quot;</span><span class="p">:</span>    <span class="n">sol</span><span class="p">[:,</span> <span class="mi">4</span><span class="p">]</span>
+                <span class="p">}</span></div>
+
+
+<div class="viewcode-block" id="RTM_gra">
+<a class="viewcode-back" href="../../../../modules.html#mndynamics.models.py.RTM_Base.RTM_gra">[docs]</a>
+<span class="k">class</span><span class="w"> </span><span class="nc">RTM_gra</span><span class="p">(</span><span class="n">RTM</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Reduced Traub-Miles Model of a Pyramidal Neuron in Rat Hippocampus</span>
+<span class="sd">    with gradual rise synapse.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">par</span><span class="p">:</span> <span class="nb">dict</span> <span class="o">=</span> <span class="p">{})</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="fm">__init__</span><span class="p">(</span><span class="n">par</span><span class="p">)</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="fm">__call__</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;&quot;&quot;Reduced Traub-Miles Model of a Pyramidal Neuron </span>
+<span class="s2">in Rat Hippocampus with gradual rise synapse.&quot;&quot;&quot;</span><span class="p">)</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_par</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="fm">__str__</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
+        <span class="k">return</span> <span class="s2">&quot;&quot;&quot;Reduced Traub-Miles Model of a Pyramidal Neuron </span>
+<span class="s2">in Rat Hippocampus with gradual rise synapse.&quot;&quot;&quot;</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="nf">get_default_parameters</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="n">params</span> <span class="o">=</span> <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="n">get_default_parameters</span><span class="p">()</span>
+        <span class="n">params</span><span class="o">.</span><span class="n">update</span><span class="p">({</span><span class="s1">&#39;tau_r&#39;</span><span class="p">:</span> <span class="mf">0.2</span><span class="p">,</span>
+                       <span class="s1">&#39;tau_d&#39;</span><span class="p">:</span> <span class="mf">2.0</span><span class="p">})</span>
+        <span class="k">return</span> <span class="n">params</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="nf">set_initial_state</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+
+        <span class="n">x0</span> <span class="o">=</span> <span class="p">[</span><span class="bp">self</span><span class="o">.</span><span class="n">v0</span><span class="p">,</span>
+              <span class="bp">self</span><span class="o">.</span><span class="n">m_inf</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">v0</span><span class="p">),</span>
+              <span class="bp">self</span><span class="o">.</span><span class="n">h_inf</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">v0</span><span class="p">),</span>
+              <span class="bp">self</span><span class="o">.</span><span class="n">n_inf</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">v0</span><span class="p">),</span>
+              <span class="mf">0.0</span><span class="p">,</span> 
+              <span class="mf">0.0</span><span class="p">]</span>
+        <span class="k">return</span> <span class="n">x0</span>
+
+<div class="viewcode-block" id="RTM_gra.f_sys">
+<a class="viewcode-back" href="../../../../modules.html#mndynamics.models.py.RTM_Base.RTM_gra.f_sys">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">f_sys</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">x0</span><span class="p">,</span> <span class="n">t</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&#39;&#39;&#39;</span>
+<span class="sd">        define RTM Model</span>
+<span class="sd">        &#39;&#39;&#39;</span>
+        <span class="n">v</span><span class="p">,</span> <span class="n">m</span><span class="p">,</span> <span class="n">h</span><span class="p">,</span> <span class="n">n</span><span class="p">,</span> <span class="n">s</span><span class="p">,</span> <span class="n">q</span> <span class="o">=</span> <span class="n">x0</span>
+        <span class="n">dv</span> <span class="o">=</span> <span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">i_ext</span> <span class="o">-</span> <span class="bp">self</span><span class="o">.</span><span class="n">g_na</span> <span class="o">*</span> <span class="n">m</span><span class="o">**</span><span class="mi">3</span> <span class="o">*</span> <span class="n">h</span> <span class="o">*</span> <span class="p">(</span><span class="n">v</span> <span class="o">-</span> <span class="bp">self</span><span class="o">.</span><span class="n">v_na</span><span class="p">)</span> <span class="o">-</span>
+              <span class="bp">self</span><span class="o">.</span><span class="n">g_k</span> <span class="o">*</span> <span class="n">n</span><span class="o">**</span><span class="mi">4</span> <span class="o">*</span> <span class="p">(</span><span class="n">v</span> <span class="o">-</span> <span class="bp">self</span><span class="o">.</span><span class="n">v_k</span><span class="p">)</span> <span class="o">-</span> <span class="bp">self</span><span class="o">.</span><span class="n">g_l</span> <span class="o">*</span> <span class="p">(</span><span class="n">v</span> <span class="o">-</span> <span class="bp">self</span><span class="o">.</span><span class="n">v_l</span><span class="p">))</span> <span class="o">/</span> <span class="bp">self</span><span class="o">.</span><span class="n">c</span>
+        <span class="n">dm</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">alpha_m</span><span class="p">(</span><span class="n">v</span><span class="p">)</span> <span class="o">*</span> <span class="p">(</span><span class="mf">1.0</span> <span class="o">-</span> <span class="n">m</span><span class="p">)</span> <span class="o">-</span> <span class="bp">self</span><span class="o">.</span><span class="n">beta_m</span><span class="p">(</span><span class="n">v</span><span class="p">)</span> <span class="o">*</span> <span class="n">m</span>
+        <span class="n">dh</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">alpha_h</span><span class="p">(</span><span class="n">v</span><span class="p">)</span> <span class="o">*</span> <span class="p">(</span><span class="mf">1.0</span> <span class="o">-</span> <span class="n">h</span><span class="p">)</span> <span class="o">-</span> <span class="bp">self</span><span class="o">.</span><span class="n">beta_h</span><span class="p">(</span><span class="n">v</span><span class="p">)</span> <span class="o">*</span> <span class="n">h</span>
+        <span class="n">dn</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">alpha_n</span><span class="p">(</span><span class="n">v</span><span class="p">)</span> <span class="o">*</span> <span class="p">(</span><span class="mf">1.0</span> <span class="o">-</span> <span class="n">n</span><span class="p">)</span> <span class="o">-</span> <span class="bp">self</span><span class="o">.</span><span class="n">beta_n</span><span class="p">(</span><span class="n">v</span><span class="p">)</span> <span class="o">*</span> <span class="n">n</span>
+        <span class="n">dq</span> <span class="o">=</span> <span class="mf">0.5</span> <span class="o">*</span> <span class="p">(</span><span class="mf">1.0</span><span class="o">+</span><span class="n">np</span><span class="o">.</span><span class="n">tanh</span><span class="p">(</span><span class="mf">0.1</span> <span class="o">*</span> <span class="n">v</span><span class="p">))</span> <span class="o">*</span> <span class="p">(</span><span class="mi">1</span><span class="o">-</span><span class="n">q</span><span class="p">)</span><span class="o">/</span><span class="bp">self</span><span class="o">.</span><span class="n">tau_r</span> <span class="o">-</span> <span class="n">q</span><span class="o">/</span><span class="bp">self</span><span class="o">.</span><span class="n">tau_d</span>
+        <span class="n">ds</span> <span class="o">=</span> <span class="n">q</span> <span class="o">*</span> <span class="p">(</span><span class="mf">1.0</span> <span class="o">-</span> <span class="n">s</span><span class="p">)</span> <span class="o">/</span> <span class="bp">self</span><span class="o">.</span><span class="n">tau_r</span> <span class="o">-</span> <span class="n">s</span> <span class="o">/</span> <span class="bp">self</span><span class="o">.</span><span class="n">tau_d</span>
+        <span class="k">return</span> <span class="p">[</span><span class="n">dv</span><span class="p">,</span> <span class="n">dm</span><span class="p">,</span> <span class="n">dh</span><span class="p">,</span> <span class="n">dn</span><span class="p">,</span> <span class="n">ds</span><span class="p">,</span> <span class="n">dq</span><span class="p">]</span></div>
+
+
+    <span class="k">def</span><span class="w"> </span><span class="nf">simulate</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">tspan</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">x0</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
+
+        <span class="n">x0</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">set_initial_state</span><span class="p">()</span> <span class="k">if</span> <span class="n">x0</span> <span class="ow">is</span> <span class="kc">None</span> <span class="k">else</span> <span class="n">x0</span>
+        <span class="n">tspan</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">tspan</span> <span class="k">if</span> <span class="n">tspan</span> <span class="ow">is</span> <span class="kc">None</span> <span class="k">else</span> <span class="n">tspan</span>
+        <span class="n">sol</span> <span class="o">=</span> <span class="n">odeint</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">f_sys</span><span class="p">,</span> <span class="n">x0</span><span class="p">,</span> <span class="n">tspan</span><span class="p">)</span>
+
+        <span class="k">return</span> <span class="p">{</span><span class="s2">&quot;t&quot;</span><span class="p">:</span> <span class="n">tspan</span><span class="p">,</span>
+                <span class="s2">&quot;v&quot;</span><span class="p">:</span>    <span class="n">sol</span><span class="p">[:,</span> <span class="mi">0</span><span class="p">],</span>
+                <span class="s2">&quot;m&quot;</span><span class="p">:</span>    <span class="n">sol</span><span class="p">[:,</span> <span class="mi">1</span><span class="p">],</span>
+                <span class="s2">&quot;h&quot;</span><span class="p">:</span>    <span class="n">sol</span><span class="p">[:,</span> <span class="mi">2</span><span class="p">],</span>
+                <span class="s2">&quot;n&quot;</span><span class="p">:</span>    <span class="n">sol</span><span class="p">[:,</span> <span class="mi">3</span><span class="p">],</span>
+                <span class="s2">&quot;s&quot;</span><span class="p">:</span>    <span class="n">sol</span><span class="p">[:,</span> <span class="mi">4</span><span class="p">],</span>
+                <span class="s2">&quot;q&quot;</span><span class="p">:</span>    <span class="n">sol</span><span class="p">[:,</span> <span class="mi">5</span><span class="p">]</span>
+                <span class="p">}</span></div>
+
+
+
+<div class="viewcode-block" id="RTM_2s">
+<a class="viewcode-back" href="../../../../modules.html#mndynamics.models.py.RTM_Base.RTM_2s">[docs]</a>
+<span class="k">class</span><span class="w"> </span><span class="nc">RTM_2s</span><span class="p">(</span><span class="n">RTM</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Reduced Traub-Miles Model of a Pyramidal Neuron in Rat Hippocampus</span>
+<span class="sd">    with 2 variable for synaptic gating variables. Eq 20.8-10</span>
+
+<span class="sd">    &quot;&quot;&quot;</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">par</span><span class="p">:</span> <span class="nb">dict</span> <span class="o">=</span> <span class="p">{})</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="fm">__init__</span><span class="p">(</span><span class="n">par</span><span class="p">)</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="fm">__call__</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;&quot;&quot;Reduced Traub-Miles Model of a Pyramidal Neuron </span>
+<span class="s2">in Rat Hippocampus with 2 synaptic gating variables (Eq 20.8-10).&quot;&quot;&quot;</span><span class="p">)</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_par</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="fm">__str__</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
+        <span class="k">return</span> <span class="s2">&quot;&quot;&quot;Reduced Traub-Miles Model of a Pyramidal Neuron </span>
+<span class="s2">in Rat Hippocampus with 2 synaptic gating variables (Eq 20.8-10).&quot;&quot;&quot;</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="nf">get_default_parameters</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="n">params</span> <span class="o">=</span> <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="n">get_default_parameters</span><span class="p">()</span>
+        <span class="n">params</span><span class="o">.</span><span class="n">update</span><span class="p">({</span><span class="s1">&#39;tau_r&#39;</span><span class="p">:</span> <span class="mf">300.0</span><span class="p">,</span>
+                       <span class="s1">&#39;tau_d&#39;</span><span class="p">:</span> <span class="mf">10.0</span><span class="p">,</span> 
+                       <span class="s1">&#39;tau_d_q&#39;</span><span class="p">:</span> <span class="mf">10.0</span><span class="p">,</span>
+                       <span class="s1">&#39;t_end&#39;</span><span class="p">:</span><span class="mf">2000.0</span><span class="p">})</span>
+        <span class="k">return</span> <span class="n">params</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="nf">set_initial_state</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+
+        <span class="n">x0</span> <span class="o">=</span> <span class="p">[</span><span class="bp">self</span><span class="o">.</span><span class="n">v0</span><span class="p">,</span>
+              <span class="bp">self</span><span class="o">.</span><span class="n">m_inf</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">v0</span><span class="p">),</span>
+              <span class="bp">self</span><span class="o">.</span><span class="n">h_inf</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">v0</span><span class="p">),</span>
+              <span class="bp">self</span><span class="o">.</span><span class="n">n_inf</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">v0</span><span class="p">),</span>
+              <span class="mf">0.0</span><span class="p">,</span> 
+              <span class="mf">0.0</span><span class="p">]</span>
+        <span class="k">return</span> <span class="n">x0</span>
+
+<div class="viewcode-block" id="RTM_2s.f_sys">
+<a class="viewcode-back" href="../../../../modules.html#mndynamics.models.py.RTM_Base.RTM_2s.f_sys">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">f_sys</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">x0</span><span class="p">,</span> <span class="n">t</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&#39;&#39;&#39;</span>
+<span class="sd">        define RTM Model</span>
+<span class="sd">        &#39;&#39;&#39;</span>
+        <span class="n">v</span><span class="p">,</span> <span class="n">m</span><span class="p">,</span> <span class="n">h</span><span class="p">,</span> <span class="n">n</span><span class="p">,</span> <span class="n">s</span><span class="p">,</span> <span class="n">q</span> <span class="o">=</span> <span class="n">x0</span>
+        <span class="n">dv</span> <span class="o">=</span> <span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">i_ext</span> <span class="o">-</span> <span class="bp">self</span><span class="o">.</span><span class="n">g_na</span> <span class="o">*</span> <span class="n">m</span><span class="o">**</span><span class="mi">3</span> <span class="o">*</span> <span class="n">h</span> <span class="o">*</span> <span class="p">(</span><span class="n">v</span> <span class="o">-</span> <span class="bp">self</span><span class="o">.</span><span class="n">v_na</span><span class="p">)</span> <span class="o">-</span>
+              <span class="bp">self</span><span class="o">.</span><span class="n">g_k</span> <span class="o">*</span> <span class="n">n</span><span class="o">**</span><span class="mi">4</span> <span class="o">*</span> <span class="p">(</span><span class="n">v</span> <span class="o">-</span> <span class="bp">self</span><span class="o">.</span><span class="n">v_k</span><span class="p">)</span> <span class="o">-</span> <span class="bp">self</span><span class="o">.</span><span class="n">g_l</span> <span class="o">*</span> <span class="p">(</span><span class="n">v</span> <span class="o">-</span> <span class="bp">self</span><span class="o">.</span><span class="n">v_l</span><span class="p">))</span> <span class="o">/</span> <span class="bp">self</span><span class="o">.</span><span class="n">c</span>
+        <span class="n">dm</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">alpha_m</span><span class="p">(</span><span class="n">v</span><span class="p">)</span> <span class="o">*</span> <span class="p">(</span><span class="mf">1.0</span> <span class="o">-</span> <span class="n">m</span><span class="p">)</span> <span class="o">-</span> <span class="bp">self</span><span class="o">.</span><span class="n">beta_m</span><span class="p">(</span><span class="n">v</span><span class="p">)</span> <span class="o">*</span> <span class="n">m</span>
+        <span class="n">dh</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">alpha_h</span><span class="p">(</span><span class="n">v</span><span class="p">)</span> <span class="o">*</span> <span class="p">(</span><span class="mf">1.0</span> <span class="o">-</span> <span class="n">h</span><span class="p">)</span> <span class="o">-</span> <span class="bp">self</span><span class="o">.</span><span class="n">beta_h</span><span class="p">(</span><span class="n">v</span><span class="p">)</span> <span class="o">*</span> <span class="n">h</span>
+        <span class="n">dn</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">alpha_n</span><span class="p">(</span><span class="n">v</span><span class="p">)</span> <span class="o">*</span> <span class="p">(</span><span class="mf">1.0</span> <span class="o">-</span> <span class="n">n</span><span class="p">)</span> <span class="o">-</span> <span class="bp">self</span><span class="o">.</span><span class="n">beta_n</span><span class="p">(</span><span class="n">v</span><span class="p">)</span> <span class="o">*</span> <span class="n">n</span>
+        <span class="n">dq</span> <span class="o">=</span> <span class="mf">0.5</span> <span class="o">*</span> <span class="p">(</span><span class="mf">1.0</span><span class="o">+</span><span class="n">np</span><span class="o">.</span><span class="n">tanh</span><span class="p">(</span><span class="mf">0.1</span> <span class="o">*</span> <span class="n">v</span><span class="p">))</span> <span class="o">*</span> <span class="p">(</span><span class="mi">1</span><span class="o">-</span><span class="n">q</span><span class="p">)</span><span class="o">*</span><span class="mi">10</span> <span class="o">-</span> <span class="n">q</span><span class="o">/</span><span class="bp">self</span><span class="o">.</span><span class="n">tau_d_q</span>
+        <span class="n">ds</span> <span class="o">=</span> <span class="n">q</span> <span class="o">*</span> <span class="p">(</span><span class="mf">1.0</span> <span class="o">-</span> <span class="n">s</span><span class="p">)</span> <span class="o">/</span> <span class="bp">self</span><span class="o">.</span><span class="n">tau_r</span> <span class="o">-</span> <span class="n">s</span> <span class="o">/</span> <span class="bp">self</span><span class="o">.</span><span class="n">tau_d</span>
+        <span class="k">return</span> <span class="p">[</span><span class="n">dv</span><span class="p">,</span> <span class="n">dm</span><span class="p">,</span> <span class="n">dh</span><span class="p">,</span> <span class="n">dn</span><span class="p">,</span> <span class="n">ds</span><span class="p">,</span> <span class="n">dq</span><span class="p">]</span></div>
+
+
+    <span class="k">def</span><span class="w"> </span><span class="nf">simulate</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">tspan</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">x0</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
+
+        <span class="n">x0</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">set_initial_state</span><span class="p">()</span> <span class="k">if</span> <span class="n">x0</span> <span class="ow">is</span> <span class="kc">None</span> <span class="k">else</span> <span class="n">x0</span>
+        <span class="n">tspan</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">tspan</span> <span class="k">if</span> <span class="n">tspan</span> <span class="ow">is</span> <span class="kc">None</span> <span class="k">else</span> <span class="n">tspan</span>
+        <span class="n">sol</span> <span class="o">=</span> <span class="n">odeint</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">f_sys</span><span class="p">,</span> <span class="n">x0</span><span class="p">,</span> <span class="n">tspan</span><span class="p">)</span>
+
+        <span class="k">return</span> <span class="p">{</span><span class="s2">&quot;t&quot;</span><span class="p">:</span> <span class="n">tspan</span><span class="p">,</span>
+                <span class="s2">&quot;v&quot;</span><span class="p">:</span>    <span class="n">sol</span><span class="p">[:,</span> <span class="mi">0</span><span class="p">],</span>
+                <span class="s2">&quot;m&quot;</span><span class="p">:</span>    <span class="n">sol</span><span class="p">[:,</span> <span class="mi">1</span><span class="p">],</span>
+                <span class="s2">&quot;h&quot;</span><span class="p">:</span>    <span class="n">sol</span><span class="p">[:,</span> <span class="mi">2</span><span class="p">],</span>
+                <span class="s2">&quot;n&quot;</span><span class="p">:</span>    <span class="n">sol</span><span class="p">[:,</span> <span class="mi">3</span><span class="p">],</span>
+                <span class="s2">&quot;s&quot;</span><span class="p">:</span>    <span class="n">sol</span><span class="p">[:,</span> <span class="mi">4</span><span class="p">],</span>
+                <span class="s2">&quot;q&quot;</span><span class="p">:</span>    <span class="n">sol</span><span class="p">[:,</span> <span class="mi">5</span><span class="p">]</span>
+                <span class="p">}</span></div>
+
+    
+    
+</pre></div>
+
+            <div class="clearer"></div>
+          </div>
+        </div>
+      </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="Main">
+        <div class="sphinxsidebarwrapper">
+<search id="searchbox" style="display: none" role="search">
+  <h3 id="searchlabel">Quick search</h3>
+    <div class="searchformwrapper">
+    <form class="search" action="../../../../search.html" method="get">
+      <input type="text" name="q" aria-labelledby="searchlabel" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false"/>
+      <input type="submit" value="Go" />
+    </form>
+    </div>
+</search>
+<script>document.getElementById('searchbox').style.display = "block"</script>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="related" role="navigation" aria-label="Related">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../../../../genindex.html" title="General Index"
+             >index</a></li>
+        <li class="right" >
+          <a href="../../../../py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li class="nav-item nav-item-0"><a href="../../../../index.html">mndynamics 0.1.dev1+gb658401 documentation</a> &#187;</li>
+          <li class="nav-item nav-item-1"><a href="../../../index.html" >Module code</a> &#187;</li>
+        <li class="nav-item nav-item-this"><a href="">mndynamics.models.py.RTM_Base</a></li> 
+      </ul>
+    </div>
+    <div class="footer" role="contentinfo">
+    &#169; Copyright 2023, Abolfazl Ziaeemehr.
+      Created using <a href="https://www.sphinx-doc.org/">Sphinx</a> 8.1.3.
+    </div>
+  </body>
+</html>

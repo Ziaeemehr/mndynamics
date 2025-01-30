@@ -1,9 +1,0 @@
-wheel
-numpy
-scipy
-tqdm
-networkx
-cloud_sptheme
-matplotlib
-numpydoc
-setuptools_scm

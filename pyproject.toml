@@ -1,0 +1,31 @@
+[build-system]
+requires = ["setuptools", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "mndynamics"
+version = "0.1.0"
+description = "Modeling neural dynamics"
+authors = [
+    { name = "Abolfazl Ziaeemehr", email = "a.ziaeemehr@gmail.com" }
+]
+readme = "README.md"
+license = { text = "MIT" }
+requires-python = ">=3.1"
+dependencies = [
+    "wheel",
+    "numpy",
+    "scipy",
+    "tqdm",
+    "networkx",
+    "cloud_sptheme",
+    "matplotlib",
+    "numpydoc",
+    "setuptools_scm"
+]
+
+[project.urls]
+Homepage = "https://github.com/Ziaeemehr/mndynamics"
+
+[tool.setuptools]
+packages = ["mndynamics"]

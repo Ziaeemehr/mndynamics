@@ -3,6 +3,8 @@
 [![Binder](https://mybinder.org/badge_logo.svg)](https://mybinder.org/v2/gh/Ziaeemehr/mndynamics/main?labpath=mndynamics%2Fexamples%2FIntro.ipynb)
 [![Documentation Status](https://github.com/Ziaeemehr/mndynamics/actions/workflows/documents.yml/badge.svg
 )](https://ziaeemehr.github.io/mndynamics/)
+[![DOI](https://zenodo.org/badge/576714188.svg)](https://doi.org/10.5281/zenodo.14725087)
+
 
 
 ### Modeling Neural Dynamics
